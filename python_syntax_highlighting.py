@@ -37,7 +37,7 @@ class PythonHighlighter(QtGui.QSyntaxHighlighter):
             'brace': self.syntax_frmt(cc.Svg.lightgrey),
             'defclass': self.syntax_frmt(cc.Svg.orange, 'bold'),
             'string': self.syntax_frmt(cc.Svg.lightgreen),
-            'comment': self.syntax_frmt(cc.Svg.darkgray, 'italic'),
+            'comment': self.syntax_frmt(cc.Svg.darkslategray, 'italic'),
             'self': self.syntax_frmt(cc.Svg.purple, 'italic'),
             'numbers': self.syntax_frmt(cc.Svg.dodgerblue),
             'builtins': self.syntax_frmt(cc.Svg.blueviolet)
@@ -61,28 +61,40 @@ class PythonHighlighter(QtGui.QSyntaxHighlighter):
             next_ = match.next()
             self.setFormat(next_.capturedStart(), next_.capturedLength(), self.styles['numbers'])
 
-        line_strings_patterns = r"""(?:\"[^\\"|\s]*")|(?:\'[^\\'|\s]*\')"""
+        comment = QtCore.QRegularExpression(rf'#.*')
+        match = comment.globalMatch(text)
+        while match.hasNext():
+            next_ = match.next()
+            self.setFormat(next_.capturedStart(), next_.capturedLength(), self.styles['comment'])
+
+        line_strings_patterns = r"""(?:".*")|(?:'.*')"""
         strings = [x.span(0) for x in re.finditer(line_strings_patterns, text)]
         if strings:
             for i, j in strings:
                 self.setFormat(i, j - i, self.styles['string'])
 
         multi_line_strings_double = r"(?:\"\"\")"
-        self.setCurrentBlockState(2)
+        self.setCurrentBlockState(1)
         multi_line_strings_double = [x.span(0) for x in re.finditer(multi_line_strings_double, text)]
-        if multi_line_strings_double and self.previousBlockState() == 2:
-            self.setCurrentBlockState(3)
+        print(len(multi_line_strings_double))
+        if len(multi_line_strings_double) == 2:
+            self.setFormat(multi_line_strings_double[0][0],
+                           len(text) - multi_line_strings_double[1][0],
+                           self.styles['string'])
+            return
+        if multi_line_strings_double and self.previousBlockState() == 1:
+            self.setCurrentBlockState(2)
             self.setFormat(multi_line_strings_double[0][0],
                            len(text) - multi_line_strings_double[0][0],
                            self.styles['string'])
             return
-        elif multi_line_strings_double and self.previousBlockState() == 3:
-            self.setCurrentBlockState(2)
+        elif multi_line_strings_double and self.previousBlockState() == 2:
+            self.setCurrentBlockState(1)
             self.setFormat(0,
                            multi_line_strings_double[0][1],
                            self.styles['string'])
-        elif not multi_line_strings_double and self.previousBlockState() == 3:
-            self.setCurrentBlockState(3)
+        elif not multi_line_strings_double and self.previousBlockState() == 2:
+            self.setCurrentBlockState(2)
             self.setFormat(0,
                            len(text),
                            self.styles['string'])

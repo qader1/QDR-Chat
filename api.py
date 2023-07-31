@@ -19,7 +19,6 @@ class OpenAIChat(QRunnable):
     def set_system_message(self, message):
         self.system_message = SystemMessage(content=message)
 
-
     @pyqtSlot()
     def run(self):
         self.signals.started.emit()
