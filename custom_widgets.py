@@ -12,8 +12,8 @@ from PyQt6.QtWidgets import (QApplication,
                              QLineEdit,
                              QLabel)
 
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QColor, QPalette, QIcon, QFont
+from PyQt6.QtCore import Qt, QTimer, pyqtSlot, pyqtSignal, QObject
+from PyQt6.QtGui import QColor, QPalette, QIcon, QFont, QPixmap, QPainter
 from python_syntax_highlighting import PythonHighlighter
 import re
 import csv
@@ -61,13 +61,20 @@ class ChatWidget(QWidget):
         self.message_display_widget.container.setAlignment(Qt.AlignmentFlag.AlignTop)
 
 
+class SystemMessageSignal(QObject):
+    SystemMessageChanged = pyqtSignal(str)
+
+
 class SystemMessageWidget(QWidget):
     def __init__(self):
+        # TODO finish the system message implementation (connect to session object and api)
+        # TODO style the buttons
         super().__init__()
         system_message_layout = QHBoxLayout()
         self.setLayout(system_message_layout)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setStyleSheet("background-color: #2A2B2E")
+        self.setStyleSheet("background-color: #2A2B2E;"
+                           "border-bottom-left-radius: 12px")
 
         label = QLabel("System Prompt")
         label.setContentsMargins(10, 0, 10, 0)
@@ -79,24 +86,125 @@ class SystemMessageWidget(QWidget):
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.system_message = QLineEdit()
+        self.system_message.setReadOnly(True)
         self.system_message.setContentsMargins(0, 0, 10, 0)
         self.system_message.setStyleSheet("background-color: #515473;"
                                           "border-top-right-radius: 5px;"
                                           "border-bottom-right-radius: 5px;"
+                                          "border-bottom-left-radius: 0;"
                                           "padding-left: 5px;"
                                           "color: #C0C0C0")
+
         self.system_message.setFont(QFont('serif', 8, 400, True))
         self.system_message.setMaximumHeight(30)
 
         self.system_message.setSizePolicy(label.sizePolicy())
 
-        self.edit = QPushButton()
-        self.edit.setIcon(QIcon('icons/edit.svg'))
+        self.edit = ColorableButtonIcon('icons/edit.svg',
+                                        "grey",
+                                        "silver",
+                                        None)
+
+        self.confirm = QPushButton()
+        self.confirm.setStyleSheet("padding: 4px")
+        self.confirm.setIcon(QIcon("icons/confirm.svg"))
+        self.cancel = QPushButton()
+        self.cancel.setStyleSheet("padding: 4px")
+        self.cancel.setIcon(QIcon("icons/cancel.svg"))
+
+        self.confirm.setHidden(True)
+        self.cancel.setHidden(True)
+
+        self.edit.setStyleSheet(
+            """
+            QPushButton {
+                padding: 4px ;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: darkslategrey;
+            }
+            QPushButton:pressed {
+                background-color: #008080;
+            }
+            """
+
+        )
+
+        self.edit.clicked.connect(self.edit_slot)
+        self.confirm.clicked.connect(self.confirm_slot)
+        self.cancel.clicked.connect(self.cancel_slot)
 
         system_message_layout.addWidget(label, 3)
         system_message_layout.addWidget(self.system_message, 20)
         system_message_layout.addWidget(self.edit)
+        system_message_layout.addWidget(self.confirm)
+        system_message_layout.addWidget(self.cancel)
         system_message_layout.setSpacing(0)
+
+        self.signal = SystemMessageSignal()
+        self.original_system_text = None
+
+    @pyqtSlot()
+    def edit_slot(self):
+        self.original_system_text = self.system_message.text()
+        self.toggle_buttons()
+        self.system_message.setFocus()
+
+    @pyqtSlot()
+    def confirm_slot(self):
+        self.toggle_buttons()
+        self.signal.SystemMessageChanged.emit(self.system_message.text())
+
+    @pyqtSlot()
+    def cancel_slot(self):
+        self.toggle_buttons()
+        self.system_message.setText(self.original_system_text)
+
+    def toggle_buttons(self):
+        self.system_message.setReadOnly(not self.system_message.isReadOnly())
+
+        self.edit.setHidden(not self.edit.isHidden())
+        self.confirm.setHidden(not self.confirm.isHidden())
+        self.cancel.setHidden(not self.cancel.isHidden())
+
+
+class ColorableButtonIcon(QPushButton):
+    def __init__(self, icon_path, color, hover_color, pressed_color):
+        super().__init__()
+        self.color = color
+        self.hover_color = hover_color
+        self.pressed_color = pressed_color
+        self.icon_path = icon_path
+        self.setIcon(self.icon_from_svg(color))
+
+    def icon_from_svg(self, color):
+        img = QPixmap(self.icon_path)
+        qp = QPainter(img)
+        qp.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+        qp.fillRect(img.rect(), QColor(color))
+        qp.end()
+        return QIcon(img)
+
+    def enterEvent(self, event):
+        if self.hover_color is not None:
+            self.setIcon(self.icon_from_svg(self.hover_color))
+        super().enterEvent(event)
+
+    def leaveEvent(self, event) -> None:
+        if self.color is not None:
+            self.setIcon(self.icon_from_svg(self.color))
+        super().leaveEvent(event)
+
+    def mousePressEvent(self, e) -> None:
+        if self.pressed_color is not None:
+            self.setIcon(self.icon_from_svg(self.pressed_color))
+        return super().mousePressEvent(e)
+
+    def mouseReleaseEvent(self, e):
+        if self.hover_color is not None:
+            self.setIcon(self.icon_from_svg(self.hover_color))
+        return super().mouseReleaseEvent(e)
 
 
 class HistoryWidget(QWidget):
@@ -130,9 +238,11 @@ class InputWidget(QWidget):
         input_widget_box = QHBoxLayout()
         self.setLayout(input_widget_box)
         self.text_edit = InputText()
-
-        self.send_button = QPushButton()
-        self.send_button.setIcon(QIcon('icons/send.svg'))
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
+        self.send_button = ColorableButtonIcon('icons/send.svg',
+                                               'grey',
+                                               'silver',
+                                               None)
         input_widget_box.addWidget(self.text_edit)
         input_widget_box.addWidget(self.send_button)
 

@@ -23,9 +23,9 @@ MODEL = file['model']
 
 class MainWindow(QMainWindow):
     # TODO work on menu bar (change api key, model, themes if I felt like it)
-    # TODO add a new text field for the system message
-    # TODO syntax highlighting for code (needs fixing for messages with multiple blocks)
-    # TODO Optimize layout
+    # TODO work on functions feature in openAI model
+    # TODO stream output
+    # TODO animation
     def __init__(self):
         super().__init__()
         self.setWindowTitle('QDR Chat')
@@ -42,6 +42,7 @@ class MainWindow(QMainWindow):
         self.chat_widget = ChatWidget(self)
 
         self.chat_widget.input_widget.send_button.clicked.connect(self.send)
+        #self.chat_widget.system_message_widget.edit.clicked.connect(self.edit_system_message)
 
         self.get_history()
         self.history_widget.new_chat_btn.clicked.connect(self.new_session)
@@ -60,6 +61,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.main_widget)
 
     def send(self):
+        if self.chat_widget.input_widget.text_edit.toPlainText() == '':
+            return
         if self.current_session is None:
             title = 'Dummy'+str(random.randint(1, 200))
             self.current_session = Session(title)
@@ -75,6 +78,9 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(5, self.chat_widget.scroll_to_bottom)
         self.chat_widget.input_widget.text_edit.setText('')
         self.current_session.save()
+
+    def edit_system_message(self):
+        self.chat_widget.system_message_widget.edit_system_message()
 
     def run_model(self):
         llm = OpenAIChat(API_KEY, MODEL, self)
@@ -109,6 +115,7 @@ class MainWindow(QMainWindow):
                 for row in csv_reader:
                     title = row[2]
                     self.history_widget.add(title)
+        self.history_widget.history_list.clearSelection()
 
     def new_session(self):
         self.chat_widget.clear()
@@ -120,6 +127,7 @@ class Session:
     def __init__(self, title):
         self.title = title
         self.start = datetime.datetime.now()
+        self.system_message = None
         self.messages = []
         self.id_ = str(uuid.uuid4())
 

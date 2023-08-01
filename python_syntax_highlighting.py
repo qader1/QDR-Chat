@@ -1,7 +1,5 @@
-import keyword
-import sys
-from PyQt6 import QtCore, QtWidgets, QtGui
-from PyQt6.QtGui import QColorConstants as cc
+from PyQt6 import QtCore, QtGui
+from PyQt6.QtGui import QColorConstants as Cc
 import keyword
 import re
 
@@ -9,19 +7,15 @@ import re
 BUILTINS = dir(__builtins__)
 KEYWORDS = keyword.kwlist
 
-# Python operators
+
 operators = [
     '=',
-    # Comparison
     '==', '!=', '<', '<=', '>', '>=',
-    # Arithmetic
     '+', '-', '*', '/', '//', '%', '**',
-    # In-place
     '+=', '-=', '*=', '/=', '%=',
     '^', '|', '&', '~', '>>', '<<',
 ]
 
-# Python braces
 braces = [
     '{', '}', '(', ')', '[', ']',
 ]
@@ -32,22 +26,22 @@ class PythonHighlighter(QtGui.QSyntaxHighlighter):
         super().__init__(doc)
 
         self.styles = {
-            'keyword': self.syntax_frmt(cc.Svg.orange),
-            'operator': self.syntax_frmt(cc.Svg.lightgrey),
-            'brace': self.syntax_frmt(cc.Svg.lightgrey),
-            'defclass': self.syntax_frmt(cc.Svg.orange, 'bold'),
-            'string': self.syntax_frmt(cc.Svg.lightgreen),
-            'comment': self.syntax_frmt(cc.Svg.darkslategray, 'italic'),
-            'self': self.syntax_frmt(cc.Svg.purple, 'italic'),
-            'numbers': self.syntax_frmt(cc.Svg.dodgerblue),
-            'builtins': self.syntax_frmt(cc.Svg.blueviolet)
+            'keyword': self.syntax_frmt(Cc.Svg.orange),
+            'operator': self.syntax_frmt(Cc.Svg.lightgrey),
+            'brace': self.syntax_frmt(Cc.Svg.lightgrey),
+            'string': self.syntax_frmt(Cc.Svg.lightgreen),
+            'comment': self.syntax_frmt(Cc.Svg.darkslategray, 'italic'),
+            'self': self.syntax_frmt(Cc.Svg.purple, 'italic'),
+            'numbers': self.syntax_frmt(Cc.Svg.dodgerblue),
+            'builtins': self.syntax_frmt(Cc.Svg.blueviolet)
         }
 
     def highlightBlock(self, text: str):
         font_frmt = QtGui.QTextCharFormat()
         font_frmt.setFontFamily("Fixedsys")
         self.setFormat(0, len(text), font_frmt)
-        for desc, style in zip((operators, BUILTINS, KEYWORDS, braces), ('operator', 'builtins', 'keyword', 'brace')):
+        for desc, style in zip((operators, BUILTINS, KEYWORDS, braces),
+                               ('operator', 'builtins', 'keyword', 'brace')):
             for i in desc:
                 expression = QtCore.QRegularExpression(rf"\b{i}\b")
                 match = expression.globalMatch(text)
@@ -76,7 +70,6 @@ class PythonHighlighter(QtGui.QSyntaxHighlighter):
         multi_line_strings_double = r"(?:\"\"\")"
         self.setCurrentBlockState(1)
         multi_line_strings_double = [x.span(0) for x in re.finditer(multi_line_strings_double, text)]
-        print(len(multi_line_strings_double))
         if len(multi_line_strings_double) == 2:
             self.setFormat(multi_line_strings_double[0][0],
                            len(text) - multi_line_strings_double[1][0],
@@ -114,4 +107,3 @@ class PythonHighlighter(QtGui.QSyntaxHighlighter):
             frmt.setFontWeight(400)
 
         return frmt
-
