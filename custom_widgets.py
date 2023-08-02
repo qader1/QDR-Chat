@@ -54,11 +54,15 @@ class ChatWidget(QWidget):
         self.scroll.verticalScrollBar().setValue(x.maximum())
 
     def clear(self):
+        self.set_system_message('')
         while self.message_display_widget.container.count():
             child = self.message_display_widget.container.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()
         self.message_display_widget.container.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+    def set_system_message(self, text):
+        self.system_message_widget.system_message.setText(text)
 
 
 class SystemMessageSignal(QObject):
@@ -67,8 +71,6 @@ class SystemMessageSignal(QObject):
 
 class SystemMessageWidget(QWidget):
     def __init__(self):
-        # TODO finish the system message implementation (connect to session object and api)
-        # TODO style the buttons
         super().__init__()
         system_message_layout = QHBoxLayout()
         self.setLayout(system_message_layout)
@@ -86,7 +88,7 @@ class SystemMessageWidget(QWidget):
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.system_message = QLineEdit()
-        self.system_message.setReadOnly(True)
+        self.system_message.setEnabled(False)
         self.system_message.setContentsMargins(0, 0, 10, 0)
         self.system_message.setStyleSheet("background-color: #515473;"
                                           "border-top-right-radius: 5px;"
@@ -97,6 +99,7 @@ class SystemMessageWidget(QWidget):
 
         self.system_message.setFont(QFont('serif', 8, 400, True))
         self.system_message.setMaximumHeight(30)
+        self.system_message.setText("You are a helpful assistant")
 
         self.system_message.setSizePolicy(label.sizePolicy())
 
@@ -150,23 +153,28 @@ class SystemMessageWidget(QWidget):
         self.original_system_text = self.system_message.text()
         self.toggle_buttons()
         self.system_message.setFocus()
+        self.system_message.setCursorPosition(len(self.system_message.text()))
 
     @pyqtSlot()
     def confirm_slot(self):
         self.toggle_buttons()
         self.signal.SystemMessageChanged.emit(self.system_message.text())
+        self.system_message.setCursorPosition(0)
 
     @pyqtSlot()
     def cancel_slot(self):
         self.toggle_buttons()
         self.system_message.setText(self.original_system_text)
+        self.system_message.setCursorPosition(0)
 
     def toggle_buttons(self):
-        self.system_message.setReadOnly(not self.system_message.isReadOnly())
+        self.system_message.setEnabled(not self.system_message.isEnabled())
 
-        self.edit.setHidden(not self.edit.isHidden())
         self.confirm.setHidden(not self.confirm.isHidden())
         self.cancel.setHidden(not self.cancel.isHidden())
+        font = self.system_message.font()
+        font.setItalic(not self.system_message.font().italic())
+        self.system_message.setFont(font)
 
 
 class ColorableButtonIcon(QPushButton):

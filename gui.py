@@ -22,10 +22,9 @@ MODEL = file['model']
 
 
 class MainWindow(QMainWindow):
+    # TODO fix the system prompt interactions and style (new chat history list interactions, font, buttons)
     # TODO work on menu bar (change api key, model, themes if I felt like it)
-    # TODO work on functions feature in openAI model
     # TODO stream output
-    # TODO animation
     def __init__(self):
         super().__init__()
         self.setWindowTitle('QDR Chat')
@@ -42,7 +41,7 @@ class MainWindow(QMainWindow):
         self.chat_widget = ChatWidget(self)
 
         self.chat_widget.input_widget.send_button.clicked.connect(self.send)
-        #self.chat_widget.system_message_widget.edit.clicked.connect(self.edit_system_message)
+        self.chat_widget.system_message_widget.signal.SystemMessageChanged.connect(self.edit_system_message)
 
         self.get_history()
         self.history_widget.new_chat_btn.clicked.connect(self.new_session)
@@ -66,6 +65,7 @@ class MainWindow(QMainWindow):
         if self.current_session is None:
             title = 'Dummy'+str(random.randint(1, 200))
             self.current_session = Session(title)
+            self.chat_widget.set_system_message(self.current_session.system_message)
             self.history_widget.add(title)
 
         self.current_session.append_message(
@@ -79,11 +79,18 @@ class MainWindow(QMainWindow):
         self.chat_widget.input_widget.text_edit.setText('')
         self.current_session.save()
 
-    def edit_system_message(self):
-        self.chat_widget.system_message_widget.edit_system_message()
+    def edit_system_message(self, text):
+        if self.current_session is None:
+            title = 'Dummy' + str(random.randint(1, 200))
+            self.current_session = Session(title)
+            self.current_session.system_message = text
+            self.history_widget.add(title)
+            self.current_session.save()
+        else:
+            self.current_session.system_message = text
 
     def run_model(self):
-        llm = OpenAIChat(API_KEY, MODEL, self)
+        llm = OpenAIChat(API_KEY, MODEL, self.current_session)
         llm.signals.started.connect(lambda: self.chat_widget.input_widget.text_edit.setDisabled(True))
         llm.signals.result.connect(self.receive)
         self.pool.start(llm)
@@ -104,6 +111,7 @@ class MainWindow(QMainWindow):
             id_ = list(reader)[index.row()][0]
         with open(f'history/{id_}.chs', 'rb') as f:
             self.current_session = pickle.load(f)
+        self.chat_widget.set_system_message(self.current_session.system_message)
         self.chat_widget.display_messages(self.current_session.messages)
 
     def get_history(self):
@@ -119,6 +127,7 @@ class MainWindow(QMainWindow):
 
     def new_session(self):
         self.chat_widget.clear()
+        self.chat_widget.set_system_message("You are a helpful assistant")
         self.history_widget.history_list.setCurrentItem(None)
         self.current_session = None
 
@@ -127,7 +136,7 @@ class Session:
     def __init__(self, title):
         self.title = title
         self.start = datetime.datetime.now()
-        self.system_message = None
+        self.system_message = "You are a helpful assistant"
         self.messages = []
         self.id_ = str(uuid.uuid4())
 
