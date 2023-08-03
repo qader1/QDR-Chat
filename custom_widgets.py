@@ -10,9 +10,10 @@ from PyQt6.QtWidgets import (QApplication,
                              QMenu,
                              QSizePolicy,
                              QLineEdit,
-                             QLabel)
-
-from PyQt6.QtCore import Qt, QTimer, pyqtSlot, pyqtSignal, QObject
+                             QLabel,
+                             )
+from PyQt6.QtSvgWidgets import QSvgWidget
+from PyQt6.QtCore import Qt, QTimer, pyqtSlot, pyqtSignal, QObject, QRect
 from PyQt6.QtGui import QColor, QPalette, QIcon, QFont, QPixmap, QPainter
 from python_syntax_highlighting import PythonHighlighter
 import re
@@ -24,6 +25,7 @@ class ChatWidget(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
         self.chat_container = QVBoxLayout()
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.chat_container.setContentsMargins(0, 0, 0, 0)
         self.chat_container.setSpacing(0)
         self.setLayout(self.chat_container)
@@ -31,6 +33,11 @@ class ChatWidget(QWidget):
                            "background-color: rgb(52, 53, 65);")
 
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+
+        self.nn = QSvgWidget('icons/robot.svg')
+        self.nn.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
+        self.nn.renderer().setViewBox(QRect(0, 0, 245, 440))
+        self.nn.setHidden(True)
 
         self.system_message_widget = SystemMessageWidget()
         self.message_display_widget = MessageDisplayWidget()
@@ -40,6 +47,7 @@ class ChatWidget(QWidget):
 
         self.chat_container.addWidget(self.system_message_widget, 1)
         self.chat_container.addWidget(self.scroll, 13)
+        self.chat_container.addWidget(self.nn, Qt.AlignmentFlag.AlignCenter)
         self.chat_container.addWidget(self.input_widget, 1)
 
     def display_messages(self, messages):
@@ -63,6 +71,11 @@ class ChatWidget(QWidget):
 
     def set_system_message(self, text):
         self.system_message_widget.system_message.setText(text)
+
+    def about(self, show):
+        self.nn.setHidden(not show)
+        self.message_display_widget.setHidden(show)
+        self.system_message_widget.setHidden(show)
 
 
 class SystemMessageSignal(QObject):

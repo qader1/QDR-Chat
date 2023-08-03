@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QApplication, QMainWindow
-from PyQt6.QtCore import QSize, QThreadPool
+from PyQt6.QtCore import QSize, QThreadPool, pyqtSlot
 from api import OpenAIChat
 from custom_widgets import *
 import random
@@ -39,9 +39,7 @@ class MainWindow(QMainWindow):
 
         self.history_widget = HistoryWidget()
         self.chat_widget = ChatWidget(self)
-
-        self.chat_widget.input_widget.send_button.clicked.connect(self.send)
-        self.chat_widget.system_message_widget.signal.SystemMessageChanged.connect(self.edit_system_message)
+        self.chat_widget.about(True)
 
         self.get_history()
         self.history_widget.new_chat_btn.clicked.connect(self.new_session)
@@ -49,6 +47,10 @@ class MainWindow(QMainWindow):
 
         self.main_container.addWidget(self.history_widget, 1)
         self.main_container.addWidget(self.chat_widget, 5)
+
+        self.chat_widget.input_widget.send_button.clicked.connect(self.send)
+        self.chat_widget.system_message_widget.signal.SystemMessageChanged.connect(self.edit_system_message)
+        self.history_widget.history_list.clicked.connect(self.show_about)
 
         self.current_session = None
 
@@ -67,6 +69,7 @@ class MainWindow(QMainWindow):
             self.current_session = Session(title)
             self.chat_widget.set_system_message(self.current_session.system_message)
             self.history_widget.add(title)
+            self.show_about(False)
 
         self.current_session.append_message(
             self.chat_widget.input_widget.text_edit.toPlainText(), 'user'
@@ -130,6 +133,13 @@ class MainWindow(QMainWindow):
         self.chat_widget.set_system_message("You are a helpful assistant")
         self.history_widget.history_list.setCurrentItem(None)
         self.current_session = None
+        self.chat_widget.about(True)
+
+    def show_about(self, item):
+        if item is None:
+            self.chat_widget.about(True)
+        else:
+            self.chat_widget.about(False)
 
 
 class Session:
