@@ -22,9 +22,8 @@ MODEL = file['model']
 
 
 class MainWindow(QMainWindow):
-    # TODO fix the system prompt interactions and style (new chat history list interactions, font, buttons)
-    # TODO work on menu bar (change api key, model, themes if I felt like it)
-    # TODO stream output
+    # TODO work on menu bar (change api key, model, themes maybe)
+    # TODO fix highlighting when multiple blocks of code exist in one message
     def __init__(self):
         super().__init__()
         self.setWindowTitle('QDR Chat')
@@ -35,10 +34,13 @@ class MainWindow(QMainWindow):
         self.main_container.setContentsMargins(0, 0, 0, 0)
         self.main_widget = QWidget()
         self.main_widget.setLayout(self.main_container)
-        self.setStyleSheet("border-width: 0px")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+
+        with open("style/style.qss") as f:
+            self.setStyleSheet(f.read())
 
         self.history_widget = HistoryWidget()
-        self.chat_widget = ChatWidget(self)
+        self.chat_widget = ChatWidget()
         self.chat_widget.about(True)
 
         self.get_history()
@@ -116,6 +118,7 @@ class MainWindow(QMainWindow):
             self.current_session = pickle.load(f)
         self.chat_widget.set_system_message(self.current_session.system_message)
         self.chat_widget.display_messages(self.current_session.messages)
+        self.chat_widget.scroll_to_bottom()
 
     def get_history(self):
         if 'history.csv' not in os.listdir('history'):

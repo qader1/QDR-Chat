@@ -1,0 +1,238 @@
+QMainWindow {
+    border: 0px;
+}
+
+QTextEdit#input_text {
+    background-color: rgb(58, 60, 74);
+    color: darkgrey;
+    border-radius: 8px;
+    padding: 6px 6px 6px 6px;
+}
+
+QTextEdit#code {
+    background-color: rgb(0, 0, 0);
+    border: 0px;
+    margin: 0 10px 0 10px;
+    padding-left: 70%;
+    padding-right: 70%;
+    padding-top: 10%;
+    padding-bottom: 10%;
+}
+
+QTextEdit.Message {
+    color: lightgrey;
+    background-repeat: no-repeat;
+    background-position: left center;
+    background-origin: padding;
+    margin: 0 10px 0 10px;
+    border: 0px;
+    padding-left: 50%;
+    padding-right: 60%;
+    padding-top: 15%;
+    padding-bottom: 15%
+}
+
+QTextEdit#user {
+    background-color: rgb(52, 53, 65);
+    background-image: url(icons/human.svg);
+}
+
+
+QWidget.SystemMessageWidget {
+    background-color: #2A2B2E;
+    border-bottom-left-radius: 12px;
+    border: 0;
+}
+
+QWidget.HistoryWidget {
+    background-color: rgb(32, 33, 35);
+    border: 0;
+}
+
+QWidget.MessageDisplayWidget {
+    border: 0;
+    background-color: rgb(52, 53, 65);
+}
+
+QWidget {
+    background-color: rgb(52, 53, 65);
+    border: 0;
+}
+
+QTextEdit#assistant {
+    background-color: rgb(68, 70, 84);
+    background-image: url(icons/ai.svg);
+}
+
+QScrollBar {
+	border: none;
+    background: rgb(52, 53, 65);
+    width: 8px;
+    margin: 0px 0 0px 0;
+	border-radius: 2px;
+}
+
+QScrollBar::handle {
+	background-color: rgb(125, 126, 140);
+	min-height: 30px;
+	border-radius: 3px;
+}
+QScrollBar::handle:hover{
+	background-color: rgb(159, 160, 179);
+}
+QScrollBar::handle:pressed {
+	background-color: rgb(179, 180, 201);
+}
+
+
+QScrollBar::sub-line {
+	border: none;
+	background-color: rgb(52, 53, 65);
+	height: 0px;
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	subcontrol-position: top;
+	subcontrol-origin: margin;
+}
+QScrollBar::sub-line:hover {
+	background-color: none;
+}
+QScrollBar::sub-line:pressed {
+	background-color: rgb(185, 0, 92);
+}
+
+QScrollBar::add-line {
+	border: none;
+	background-color: rgb(52, 53, 65);
+	height: 0px;
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+	subcontrol-position: bottom;
+	subcontrol-origin: margin;
+}
+
+QScrollBar::add-line:hover {
+	background-color: rgb(255, 0, 127);
+}
+
+QScrollBar::add-line:pressed {
+	background-color: rgb(185, 0, 92);
+}
+
+QScrollBar::up-arrow, QScrollBar::down-arrow {
+	background: none;
+}
+QScrollBar::add-page, QScrollBar::sub-page {
+	background: none;
+}
+
+
+
+QLabel#system_prompt {
+    background-color: #008080;
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    font-size: 13px;
+}
+
+QLineEdit#system_message {
+    background-color: #515473;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 0;
+    padding-left: 5px;
+    color: #C0C0C0
+}
+
+
+QPushButton#new_chat_btn {
+    background-color: rgb(32, 33, 35);
+    border: 1px solid;
+    border-color: rgb(100, 100, 100);
+    border-radius: 6px;
+    color: rgb(206, 206, 206);
+    height: 30px;
+    margin: 10px;
+    font-weight: 600
+}
+
+QPushButton:hover#new_chat_btn {
+    background-color: rgb(45, 45, 51);
+}
+
+QPushButton:pressed#new_chat_btn {
+    background-color: rgb(50, 50, 62);
+}
+
+QPushButton#system_message_confirm, QPushButton#system_message_cancel {
+    background-color: #2A2B2E;
+    padding: 4px;
+    border: 0;
+}
+
+QPushButton#send_btn {
+    background-color: rgb(52, 53, 65);
+    border: 0;
+}
+
+QPushButton#edit {
+    background-color: #2A2B2E;
+    padding: 4px ;
+    border-radius: 4px;
+}
+QPushButton:hover#edit {
+    background-color: darkslategrey;
+}
+
+QPushButton:pressed#edit {
+    background-color: #008080;
+}
+
+QListWidget {
+    padding: 5px;
+    background-color: rgb(32, 33, 35);
+    border: 0;
+}
+
+QListWidget::item {
+    color: #ffffff;
+    border-radius: 0px;
+    padding: 8px;
+    margin: 0
+}
+
+QListWidget::item:hover {
+    background-color: rgb(45, 45, 51);
+    border-radius: 5px;
+}
+
+QListWidget::item:pressed {
+    background-color: rgb(52, 53, 65);
+    border-radius: 5px;
+}
+
+QListWidget::item:selected {
+    background-color: rgb(52, 53, 65);
+    border-radius: 5px;
+}
+
+QListWidget:focus {
+    outline: none;
+}
+
+QMenu#delete_menu {
+    background-color: #5d5d7a;
+    border: 0px solid #303847;
+    border-radius: 15px;
+    color: rgb(206, 206, 206);
+}
+
+QMenu::item#delete_menu {
+    background-color: transparent;
+    padding:3px 20px;
+    margin:5px 10px;
+}
+
+QMenu::item:selected#delete_menu {
+    background-color: #8080a8;
+}
