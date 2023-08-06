@@ -10,7 +10,8 @@ from PyQt6.QtWidgets import (QApplication,
                              QMenu,
                              QSizePolicy,
                              QLineEdit,
-                             QLabel)
+                             QLabel,
+                             QGridLayout)
 
 from PyQt6.QtSvgWidgets import QSvgWidget
 from PyQt6.QtCore import Qt, QTimer, pyqtSlot, pyqtSignal, QObject, QRect
@@ -205,8 +206,9 @@ class ColorableButtonIcon(QPushButton):
 class HistoryWidget(QWidget):
     def __init__(self):
         super().__init__()
-        self.history_container = QVBoxLayout()
+        self.history_container = QGridLayout()
         self.history_container.setContentsMargins(0, 0, 0, 0)
+        self.history_container.setSpacing(0)
         self.setLayout(self.history_container)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
@@ -214,14 +216,55 @@ class HistoryWidget(QWidget):
         self.new_chat_btn = QPushButton('New chat')
         self.new_chat_btn.setObjectName("new_chat_btn")
 
-        self.history_container.addWidget(self.new_chat_btn)
-        self.history_container.addWidget(self.history_list)
+        menu_options = [
+            "API options",
+            {"Themes": ["ChatGPT", "Light", "Energetic", "Dark"]},
+            "Close"
+        ]
+
+        self.burger = QPushButton(icon=QIcon("icons/burger.svg"))
+        self.burger.setObjectName("burger")
+        self.menu = QMenu(self.burger)
+        self.menu.setObjectName("burger_menu")
+        self.burger.setMenu(self.menu)
+        self.create_menu(menu_options, self.menu)
+        self.menu.setWindowFlags(Qt.WindowType.Popup |
+                                 Qt.WindowType.FramelessWindowHint |
+                                 Qt.WindowType.NoDropShadowWindowHint)
+        self.menu.triggered.connect(self.triggered)
+
+        self.menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+        self.history_container.addWidget(self.burger, 1, 1, 1, 1)
+        self.history_container.addWidget(self.new_chat_btn, 1, 2, 1, 3)
+        self.history_container.addWidget(self.history_list, 2, 1, 10, 4)
 
     def add(self, title):
         new_item = QListWidgetItem(title)
         new_item.setIcon(QIcon('icons/message.svg'))
         self.history_list.insertItem(0, new_item)
         self.history_list.setCurrentItem(new_item)
+
+    def create_menu(self, data, menu):
+        if isinstance(data, dict):
+            for k, v in data.items():
+                sub_menu = QMenu(k, menu)
+                sub_menu.setWindowFlags(Qt.WindowType.FramelessWindowHint |
+                                        Qt.WindowType.NoDropShadowWindowHint |
+                                        Qt.WindowType.Popup)
+                sub_menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+                menu.addMenu(sub_menu)
+                self.create_menu(v, sub_menu)
+        elif isinstance(data, list):
+            for i in data:
+                self.create_menu(i, menu)
+        else:
+            action = menu.addAction(data)
+            action.setIconVisibleInMenu(False)
+
+    def triggered(self, item):
+        if item.text() == 'Close':
+            self.window().close()
 
 
 class InputWidget(QWidget):
@@ -298,9 +341,12 @@ class MessageDisplayWidget(QWidget):
             result = pattern.search(message)
             if result:
                 pre_message, code, after_message = result.groups()
-                self.container.addWidget(Message(pre_message.strip(), role))
-                self.container.addWidget(Code(code.strip()))
-                self.container.addWidget(Message(after_message.strip(), role))
+                pre_message = Message(pre_message.strip(), role)
+                code = Code(code.strip())
+                after_message = Message(after_message.strip(), role)
+                self.container.addWidget(pre_message)
+                self.container.addWidget(code)
+                self.container.addWidget(after_message)
             else:
                 self.container.addWidget(Message(message, role))
         else:
@@ -311,7 +357,6 @@ class MessageDisplayWidget(QWidget):
 class ResizableQText(QTextEdit):
     def __init__(self):
         super().__init__()
-        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
 
     def auto_resize(self):
         self.document().setTextWidth(self.viewport().width())

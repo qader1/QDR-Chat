@@ -151,9 +151,11 @@ QPushButton#new_chat_btn {
     border-color: rgb(100, 100, 100);
     border-radius: 6px;
     color: rgb(206, 206, 206);
-    height: 30px;
-    margin: 10px;
-    font-weight: 600
+    height: 2.5em;
+    margin: 1em 10px 10px 0px;
+    padding: 0 0 0 0;
+    font-size: 13px;
+    font-weight: 1100;
 }
 
 QPushButton:hover#new_chat_btn {
@@ -188,51 +190,64 @@ QPushButton:pressed#edit {
     background-color: #008080;
 }
 
+QPushButton#burger {
+    background-color: rgb(32, 33, 35);
+    margin: 10px 10px 10px 10px;
+    padding-top: 5px;
+    padding-bottom:5px;
+    border-radius: 3px;
+}
+
+QPushButton:pressed#burger {
+    background-color: rgb(45, 45, 51);
+}
+
+QPushButton::menu-indicator#burger {
+    image: none;
+    width: 0;
+}
+
 QListWidget {
     padding: 5px;
     background-color: rgb(32, 33, 35);
-    border: 0;
 }
 
 QListWidget::item {
     color: #ffffff;
-    border-radius: 0px;
+    border-radius: 5px;
     padding: 8px;
     margin: 0
 }
 
 QListWidget::item:hover {
     background-color: rgb(45, 45, 51);
-    border-radius: 5px;
 }
 
 QListWidget::item:pressed {
     background-color: rgb(52, 53, 65);
-    border-radius: 5px;
 }
 
 QListWidget::item:selected {
     background-color: rgb(52, 53, 65);
-    border-radius: 5px;
 }
 
 QListWidget:focus {
     outline: none;
 }
 
-QMenu#delete_menu {
+QMenu {
     background-color: #5d5d7a;
     border: 0px solid #303847;
     border-radius: 15px;
     color: rgb(206, 206, 206);
 }
 
-QMenu::item#delete_menu {
+QMenu::item {
     background-color: transparent;
     padding:3px 20px;
     margin:5px 10px;
 }
 
-QMenu::item:selected#delete_menu {
+QMenu::item:selected {
     background-color: #8080a8;
 }

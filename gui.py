@@ -27,12 +27,14 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('QDR Chat')
-        self.resize(QSize(960, 540))
+        self.resize(QSize(1440, 810))
+        self.setWindowIcon(QIcon('icons/main_window.svg'))
 
         self.main_container = QHBoxLayout()
         self.main_container.setSpacing(0)
         self.main_container.setContentsMargins(0, 0, 0, 0)
         self.main_widget = QWidget()
+        self.main_widget.setObjectName("main_widget")
         self.main_widget.setLayout(self.main_container)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
