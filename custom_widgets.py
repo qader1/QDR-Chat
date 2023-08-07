@@ -1,3 +1,5 @@
+import json
+
 from PyQt6.QtWidgets import (QApplication,
                              QPushButton,
                              QVBoxLayout,
@@ -11,12 +13,14 @@ from PyQt6.QtWidgets import (QApplication,
                              QSizePolicy,
                              QLineEdit,
                              QLabel,
-                             QGridLayout)
+                             QGridLayout,
+                             QDialog)
 
 from PyQt6.QtSvgWidgets import QSvgWidget
 from PyQt6.QtCore import Qt, QTimer, pyqtSlot, pyqtSignal, QObject, QRect
 from PyQt6.QtGui import QColor, QIcon, QFont, QPixmap, QPainter
 from python_syntax_highlighting import PythonHighlighter
+import pywinstyles
 import re
 import csv
 import os
@@ -53,7 +57,6 @@ class ChatWidget(QWidget):
     def display_messages(self, messages):
         for i in messages:
             self.message_display_widget.add_message(i['message'], i['role'])
-        self.message_display_widget.container.setAlignment(Qt.AlignmentFlag.AlignBottom)
         QTimer.singleShot(5, self.scroll_to_bottom)
         self.input_widget.text_edit.setText('')
 
@@ -62,12 +65,10 @@ class ChatWidget(QWidget):
         self.scroll.verticalScrollBar().setValue(x.maximum())
 
     def clear(self):
-        self.set_system_message('')
         while self.message_display_widget.container.count():
             child = self.message_display_widget.container.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()
-        self.message_display_widget.container.setAlignment(Qt.AlignmentFlag.AlignTop)
 
     def set_system_message(self, text):
         self.system_message_widget.system_message.setText(text)
@@ -75,6 +76,7 @@ class ChatWidget(QWidget):
     def about(self, show):
         self.robot.setHidden(not show)
         self.message_display_widget.setHidden(show)
+        self.message_display_widget.container.setAlignment(Qt.AlignmentFlag.AlignBottom)
         self.system_message_widget.setHidden(show)
 
 
@@ -217,7 +219,7 @@ class HistoryWidget(QWidget):
         self.new_chat_btn.setObjectName("new_chat_btn")
 
         menu_options = [
-            "API options",
+            "API Key",
             {"Themes": ["ChatGPT", "Light", "Energetic", "Dark"]},
             "Close"
         ]
@@ -265,6 +267,55 @@ class HistoryWidget(QWidget):
     def triggered(self, item):
         if item.text() == 'Close':
             self.window().close()
+        if item.text() == 'API Key':
+            dialog = ApiDialog()
+            dialog.exec()
+
+
+class ApiDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        container = QGridLayout()
+        self.setLayout(container)
+        container.setSpacing(25)
+        container.setContentsMargins(20, 20, 20, 20)
+        self.setWindowIcon(QIcon("icons/main_window.svg"))
+        self.label = QLabel("Enter API key")
+        self.field = QLineEdit()
+        with open("key.json") as f:
+            api_key = json.load(f)['api_key']
+        self.field.setText(api_key)
+
+        self.cancel_btn = QPushButton("Cancel")
+        self.confirm_btn = QPushButton("Confirm")
+
+        self.cancel_btn.clicked.connect(self.cancel)
+        self.confirm_btn.clicked.connect(self.confirm)
+
+        container.addWidget(self.label, 1, 1, 1, 3, Qt.AlignmentFlag.AlignCenter)
+        container.addWidget(self.field, 2, 1, 1, 3)
+        container.addWidget(self.cancel_btn, 3, 1)
+        container.addWidget(self.confirm_btn, 3, 3)
+
+        pywinstyles.change_header_color(self, color="#202123")
+        pywinstyles.change_border_color(self, color="#515473")
+
+    def cancel(self):
+        self.close()
+
+    def confirm(self):
+        with open('key.json', 'r') as f:
+            file = json.load(f)
+        file['api_key'] = self.field.text()
+        with open('key.json', 'w') as f:
+            json.dump(file, f)
+        self.close()
+
+
+
+
+
+
 
 
 class InputWidget(QWidget):

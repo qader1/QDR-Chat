@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow
-from PyQt6.QtCore import QSize, QThreadPool, pyqtSlot
+from PyQt6.QtWidgets import QMainWindow
+from PyQt6.QtCore import QSize, QThreadPool
 from api import OpenAIChat
 from custom_widgets import *
 import random
@@ -8,7 +8,6 @@ import uuid
 import datetime
 import pickle
 import csv
-import pywinstyles
 import json
 import pathlib
 
@@ -111,6 +110,7 @@ class MainWindow(QMainWindow):
         self.current_session.save()
 
     def load_session(self, item):
+        self.chat_widget.about(False)
         self.chat_widget.clear()
         with open(f'history/history.csv', 'r') as f:
             reader = csv.reader(f)
@@ -134,11 +134,11 @@ class MainWindow(QMainWindow):
         self.history_widget.history_list.clearSelection()
 
     def new_session(self):
+        self.chat_widget.about(True)
         self.chat_widget.clear()
         self.chat_widget.set_system_message("You are a helpful assistant")
         self.history_widget.history_list.setCurrentItem(None)
         self.current_session = None
-        self.chat_widget.about(True)
 
     def show_about(self, item):
         if item is None:
