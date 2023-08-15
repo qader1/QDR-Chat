@@ -80,7 +80,7 @@ class ChatWidget(QWidget):
         self.system_message_widget.setHidden(show)
 
 
-class SystemMessageSignal(QObject):
+class Signal(QObject):
     SystemMessageChanged = pyqtSignal(str)
 
 
@@ -135,7 +135,7 @@ class SystemMessageWidget(QWidget):
         system_message_layout.addWidget(self.cancel)
         system_message_layout.setSpacing(0)
 
-        self.signal = SystemMessageSignal()
+        self.signal = Signal()
         self.original_system_text = None
 
     @pyqtSlot()
@@ -268,18 +268,40 @@ class HistoryWidget(QWidget):
         if item.text() == 'Close':
             self.window().close()
         if item.text() == 'API Key':
-            dialog = ApiDialog()
-            dialog.exec()
+            ApiDialog().exec()
 
 
-class ApiDialog(QDialog):
+class Dialog(QDialog):
     def __init__(self):
         super().__init__()
-        container = QGridLayout()
-        self.setLayout(container)
-        container.setSpacing(25)
-        container.setContentsMargins(20, 20, 20, 20)
+        self.container = QGridLayout()
+        self.setLayout(self.container)
+        self.container.setSpacing(25)
+        self.container.setContentsMargins(20, 20, 20, 20)
         self.setWindowIcon(QIcon("icons/main_window.svg"))
+
+    def exec(self) -> int:
+        pywinstyles.change_header_color(self, color="#202123")
+        pywinstyles.change_border_color(self, color="#515473")
+        return super().exec()
+
+
+class ErrorDialog(Dialog):
+    def __init__(self):
+        super().__init__()
+        self.label = QLabel("Incorrect API key.\n"
+                            "Set the key in the options menu in the top right corner.")
+        self.button = QPushButton("Acknowledge")
+        self.button.clicked.connect(self.close)
+        self.container.addWidget(self.label, 1, 1, 2, 3)
+        self.container.addWidget(self.button, 3, 2, 1, 1)
+        self.setFixedSize(self.sizeHint())
+
+
+class ApiDialog(Dialog):
+    def __init__(self):
+        super().__init__()
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
         self.label = QLabel("Enter API key")
         self.field = QLineEdit()
         with open("key.json") as f:
@@ -289,19 +311,14 @@ class ApiDialog(QDialog):
         self.cancel_btn = QPushButton("Cancel")
         self.confirm_btn = QPushButton("Confirm")
 
-        self.cancel_btn.clicked.connect(self.cancel)
+        self.cancel_btn.clicked.connect(self.close)
         self.confirm_btn.clicked.connect(self.confirm)
 
-        container.addWidget(self.label, 1, 1, 1, 3, Qt.AlignmentFlag.AlignCenter)
-        container.addWidget(self.field, 2, 1, 1, 3)
-        container.addWidget(self.cancel_btn, 3, 1)
-        container.addWidget(self.confirm_btn, 3, 3)
-
-        pywinstyles.change_header_color(self, color="#202123")
-        pywinstyles.change_border_color(self, color="#515473")
-
-    def cancel(self):
-        self.close()
+        self.container.addWidget(self.label, 1, 3, 1, 1, Qt.AlignmentFlag.AlignCenter)
+        self.container.addWidget(self.field, 2, 1, 1, 5)
+        self.container.addWidget(self.cancel_btn, 3, 2)
+        self.container.addWidget(self.confirm_btn, 3, 4)
+        self.setFixedSize(self.sizeHint())
 
     def confirm(self):
         with open('key.json', 'r') as f:
@@ -310,12 +327,6 @@ class ApiDialog(QDialog):
         with open('key.json', 'w') as f:
             json.dump(file, f)
         self.close()
-
-
-
-
-
-
 
 
 class InputWidget(QWidget):

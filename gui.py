@@ -14,14 +14,13 @@ import pathlib
 
 app = QApplication([])
 
-with open("key.json", 'r') as api_key:
-    file = json.load(api_key)
-API_KEY = file['api_key']
-MODEL = file['model']
+if "key.json" not in os.listdir():
+    key = {"api_key": "NoKey", "model": "gpt-4"}
+    with open("key.json", 'w') as key_file:
+        json.dump(key, key_file)
 
 
 class MainWindow(QMainWindow):
-    # TODO work on menu bar (change api key, model, themes maybe)
     # TODO fix highlighting when multiple blocks of code exist in one message
     def __init__(self):
         super().__init__()
@@ -96,14 +95,21 @@ class MainWindow(QMainWindow):
             self.current_session.system_message = text
 
     def run_model(self):
-        llm = OpenAIChat(API_KEY, MODEL, self.current_session)
+        with open("key.json", 'r') as api_key:
+            file = json.load(api_key)
+            key = file['api_key']
+            model = file['model']
+        llm = OpenAIChat(key, model, self.current_session)
         llm.signals.started.connect(lambda: self.chat_widget.input_widget.text_edit.setDisabled(True))
         llm.signals.result.connect(self.receive)
         self.pool.start(llm)
 
     def receive(self, result):
-        self.current_session.append_message(result.content, 'assistant')
-        self.chat_widget.message_display_widget.add_message(result.content, 'assistant')
+        if isinstance(result, str):
+            ErrorDialog().exec()
+        else:
+            self.current_session.append_message(result.content, 'assistant')
+            self.chat_widget.message_display_widget.add_message(result.content, 'assistant')
         QTimer.singleShot(5, self.chat_widget.scroll_to_bottom)
         self.chat_widget.input_widget.text_edit.setText('')
         self.chat_widget.input_widget.text_edit.setDisabled(False)

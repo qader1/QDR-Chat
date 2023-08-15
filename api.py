@@ -1,6 +1,7 @@
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from PyQt6.QtCore import QObject, pyqtSignal, QRunnable, pyqtSlot
+from openai import error
 
 
 class WorkerSignals(QObject):
@@ -24,5 +25,7 @@ class OpenAIChat(QRunnable):
                 messages.append(HumanMessage(content=x['message']))
             else:
                 messages.append(AIMessage(content=x['message']))
-
-        self.signals.result.emit(self.chat.predict_messages(messages))
+        try:
+            self.signals.result.emit(self.chat.predict_messages(messages))
+        except error.AuthenticationError:
+            self.signals.result.emit("Incorrect API key")
