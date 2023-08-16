@@ -15,13 +15,12 @@ import pathlib
 app = QApplication([])
 
 if "key.json" not in os.listdir():
-    key = {"api_key": "NoKey", "model": "gpt-4"}
+    key = {"api_key": "None", "model": "gpt-4"}
     with open("key.json", 'w') as key_file:
         json.dump(key, key_file)
 
 
 class MainWindow(QMainWindow):
-    # TODO fix highlighting when multiple blocks of code exist in one message
     def __init__(self):
         super().__init__()
         self.setWindowTitle('QDR Chat')
@@ -66,23 +65,52 @@ class MainWindow(QMainWindow):
     def send(self):
         if self.chat_widget.input_widget.text_edit.toPlainText() == '':
             return
+        message = self.chat_widget.input_widget.text_edit.toPlainText()
         if self.current_session is None:
-            title = 'Dummy'+str(random.randint(1, 200))
+            title = "New Chat"
             self.current_session = Session(title)
             self.chat_widget.set_system_message(self.current_session.system_message)
             self.history_widget.add(title)
             self.show_about(False)
+            self.get_title(message, self.current_session, self.history_widget.history_list.currentItem())
 
         self.current_session.append_message(
-            self.chat_widget.input_widget.text_edit.toPlainText(), 'user'
+            message, 'user'
         )
         self.chat_widget.message_display_widget.add_message(
-            self.chat_widget.input_widget.text_edit.toPlainText(), 'user'
+            message, 'user'
         )
         self.run_model()
         QTimer.singleShot(5, self.chat_widget.scroll_to_bottom)
         self.chat_widget.input_widget.text_edit.setText('')
         self.current_session.save()
+
+    def get_title(self, query, session, item):
+        with open("key.json", 'r') as api_key:
+            file = json.load(api_key)
+            api_key, model = file['api_key'], file['model']
+            query_title_thread = OpenAIChat(api_key, model, session, query)
+            query_title_thread.signals.result.connect(lambda x: self.change_title(x, session, item))
+            self.pool.start(query_title_thread)
+
+    @staticmethod
+    def change_title(title, session, item):
+        if isinstance(title, str):
+            new_title = title
+        else:
+            new_title = title.content.strip('"')
+        session.title = title.content.strip(new_title)
+        item.setText(new_title)
+        with open('history/history.csv', 'r') as f:
+            reader = csv.reader(f)
+            rows = list(reader)
+        for n, (id_, _, old_title) in enumerate(rows):
+            if id_ == session.id_:
+                rows[n] = [id_, _, new_title]
+                break
+        with open('history/history.csv', 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerows(rows)
 
     def edit_system_message(self, text):
         if self.current_session is None:
@@ -97,12 +125,16 @@ class MainWindow(QMainWindow):
     def run_model(self):
         with open("key.json", 'r') as api_key:
             file = json.load(api_key)
-            key = file['api_key']
-            model = file['model']
-        llm = OpenAIChat(key, model, self.current_session)
-        llm.signals.started.connect(lambda: self.chat_widget.input_widget.text_edit.setDisabled(True))
+            api_key, model = file['api_key'], file['model']
+        llm = OpenAIChat(api_key, model, self.current_session)
+        llm.signals.started.connect(lambda: self.set_disable(True))
         llm.signals.result.connect(self.receive)
         self.pool.start(llm)
+
+    def set_disable(self, disable):
+        self.chat_widget.input_widget.text_edit.setDisabled(disable)
+        self.history_widget.new_chat_btn.setDisabled(disable)
+        self.history_widget.history_list.setDisabled(disable)
 
     def receive(self, result):
         if isinstance(result, str):
@@ -112,7 +144,7 @@ class MainWindow(QMainWindow):
             self.chat_widget.message_display_widget.add_message(result.content, 'assistant')
         QTimer.singleShot(5, self.chat_widget.scroll_to_bottom)
         self.chat_widget.input_widget.text_edit.setText('')
-        self.chat_widget.input_widget.text_edit.setDisabled(False)
+        self.set_disable(False)
         self.current_session.save()
 
     def load_session(self, item):
