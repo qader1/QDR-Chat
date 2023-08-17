@@ -79,6 +79,18 @@ class ChatWidget(QWidget):
         self.message_display_widget.container.setAlignment(Qt.AlignmentFlag.AlignBottom)
         self.system_message_widget.setHidden(show)
 
+    def toggle_loading_indicator(self):
+        if self.input_widget.loading_indicator.isActive():
+            self.input_widget.send_button.setHidden(False)
+            self.input_widget.text_edit.setDisabled(False)
+            self.input_widget.text_edit.setPlaceholderText("Send a message")
+            self.input_widget.loading_indicator.stop()
+        else:
+            self.input_widget.send_button.setHidden(True)
+            self.input_widget.text_edit.setDisabled(True)
+            self.input_widget.text_edit.setPlaceholderText("Please wait.")
+            self.input_widget.loading_indicator.start()
+
 
 class Signal(QObject):
     SystemMessageChanged = pyqtSignal(str)
@@ -345,6 +357,18 @@ class InputWidget(QWidget):
         self.send_button.setObjectName("send_btn")
         input_widget_box.addWidget(self.text_edit)
         input_widget_box.addWidget(self.send_button)
+
+        self.loading_indicator = QTimer()
+        self.loading_indicator.setInterval(200)
+        self.loading_indicator.timeout.connect(self.loading_indicator_callback)
+
+    def loading_indicator_callback(self):
+        place_holder = self.text_edit.placeholderText()
+        if len(place_holder) > 15:
+            place_holder = place_holder.strip(".")
+        self.text_edit.setPlaceholderText(
+             place_holder + '.'
+        )
 
 
 class CustomQListWidget(QListWidget):

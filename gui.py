@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
         self.chat_widget.message_display_widget.add_message(
             message, 'user'
         )
-        self.run_model()
+        self.run_model(self.current_session)
         QTimer.singleShot(5, self.chat_widget.scroll_to_bottom)
         self.chat_widget.input_widget.text_edit.setText('')
         self.current_session.save()
@@ -122,37 +122,31 @@ class MainWindow(QMainWindow):
         else:
             self.current_session.system_message = text
 
-    def run_model(self):
+    def run_model(self, session):
         with open("key.json", 'r') as api_key:
             file = json.load(api_key)
             api_key, model = file['api_key'], file['model']
-        llm = OpenAIChat(api_key, model, self.current_session)
-        llm.signals.started.connect(lambda: self.set_disable(True))
-        llm.signals.result.connect(self.receive)
+        llm = OpenAIChat(api_key, model, session)
+        llm.signals.started.connect(self.set_disable)
+        llm.signals.result.connect(lambda x: self.receive(x, session))
         self.pool.start(llm)
 
-    def set_disable(self, disable):
-        if disable:
-            self.chat_widget.input_widget.text_edit.setPlaceholderText("Please wait...")
-        else:
-            self.chat_widget.input_widget.text_edit.setPlaceholderText("Send a message")
-        self.chat_widget.input_widget.send_button.setDisabled(disable)
-        self.chat_widget.input_widget.send_button.setHidden(disable)
-        self.chat_widget.input_widget.text_edit.setDisabled(disable)
-        self.history_widget.history_list.setDisabled(disable)
+    def set_disable(self):
+        self.chat_widget.toggle_loading_indicator()
 
-    def receive(self, result):
+    def receive(self, result, session):
         if isinstance(result, str):
             ErrorDialog().exec()
         else:
-            self.current_session.append_message(result.content, 'assistant')
-            self.chat_widget.message_display_widget.add_message(result.content, 'assistant')
+            session.append_message(result.content, 'assistant')
+            if session == self.current_session:
+                self.chat_widget.message_display_widget.add_message(result.content, 'assistant')
         QTimer.singleShot(5, self.chat_widget.scroll_to_bottom)
         self.chat_widget.input_widget.text_edit.setText('')
-        self.set_disable(False)
-        self.current_session.save()
+        self.set_disable()
+        session.save()
 
-    def load_session(self, item):
+    def load_session(self, _):
         self.chat_widget.about(False)
         self.chat_widget.clear()
         with open(f'history/history.csv', 'r') as f:
