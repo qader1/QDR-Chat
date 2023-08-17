@@ -20,7 +20,6 @@ class OpenAIChat(QRunnable):
     @pyqtSlot()
     def run(self):
         self.signals.started.emit()
-
         if self.query_title is not None:
             system_message = (
                 "Find the best title for the queries that you receive."

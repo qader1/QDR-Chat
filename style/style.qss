@@ -9,6 +9,10 @@ QTextEdit#input_text {
     padding: 6px 6px 6px 6px;
 }
 
+QTextEdit#input_text:disabled {
+    background-color: #41424f
+}
+
 QTextEdit#code {
     background-color: rgb(0, 0, 0);
     border: 0px;

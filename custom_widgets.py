@@ -341,8 +341,8 @@ class InputWidget(QWidget):
                                                'grey',
                                                'silver',
                                                None)
-        self.send_button.setObjectName("send_btn")
 
+        self.send_button.setObjectName("send_btn")
         input_widget_box.addWidget(self.text_edit)
         input_widget_box.addWidget(self.send_button)
 
@@ -399,18 +399,12 @@ class MessageDisplayWidget(QWidget):
 
     def add_message(self, message, role):
         if role == 'assistant':
-            pattern = re.compile(r"(.*)```python(.*?)```(.*)", flags=re.DOTALL)
-            result = pattern.search(message)
-            if result:
-                pre_message, code, after_message = result.groups()
-                pre_message = Message(pre_message.strip(), role)
-                code = Code(code.strip())
-                after_message = Message(after_message.strip(), role)
-                self.container.addWidget(pre_message)
-                self.container.addWidget(code)
-                self.container.addWidget(after_message)
-            else:
-                self.container.addWidget(Message(message, role))
+            pattern = re.compile(r"(^```python.*?```$)", flags=re.DOTALL | re.MULTILINE)
+            for match in pattern.split(message):
+                if match.startswith("```python") and match.endswith("```"):
+                    self.container.addWidget(Code(match[10:-3]))
+                else:
+                    self.container.addWidget(Message(match.strip(), role))
         else:
             self.container.addWidget(Message(message, role))
         self.container.setAlignment(Qt.AlignmentFlag.AlignBottom)

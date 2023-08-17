@@ -132,8 +132,13 @@ class MainWindow(QMainWindow):
         self.pool.start(llm)
 
     def set_disable(self, disable):
+        if disable:
+            self.chat_widget.input_widget.text_edit.setPlaceholderText("Please wait...")
+        else:
+            self.chat_widget.input_widget.text_edit.setPlaceholderText("Send a message")
+        self.chat_widget.input_widget.send_button.setDisabled(disable)
+        self.chat_widget.input_widget.send_button.setHidden(disable)
         self.chat_widget.input_widget.text_edit.setDisabled(disable)
-        self.history_widget.new_chat_btn.setDisabled(disable)
         self.history_widget.history_list.setDisabled(disable)
 
     def receive(self, result):
@@ -166,7 +171,7 @@ class MainWindow(QMainWindow):
         with open('history/history.csv', 'r') as csvfile:
             csv_reader = list(csv.reader(csvfile))
             if csv_reader is not None:
-                for row in csv_reader:
+                for row in reversed(csv_reader):
                     title = row[2]
                     self.history_widget.add(title)
         self.history_widget.history_list.clearSelection()
