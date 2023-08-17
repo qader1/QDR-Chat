@@ -139,7 +139,7 @@ class MainWindow(QMainWindow):
             ErrorDialog().exec()
         else:
             session.append_message(result.content, 'assistant')
-            if session == self.current_session:
+            if session.id_ == self.current_session.id_:
                 self.chat_widget.message_display_widget.add_message(result.content, 'assistant')
         QTimer.singleShot(5, self.chat_widget.scroll_to_bottom)
         self.chat_widget.input_widget.text_edit.setText('')
