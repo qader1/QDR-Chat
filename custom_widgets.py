@@ -232,7 +232,7 @@ class HistoryWidget(QWidget):
 
         menu_options = [
             "API Key",
-            {"Themes": ["ChatGPT", "Light", "Energetic", "Dark"]},
+            "About",
             "Close"
         ]
 
@@ -279,8 +279,10 @@ class HistoryWidget(QWidget):
     def triggered(self, item):
         if item.text() == 'Close':
             self.window().close()
-        if item.text() == 'API Key':
+        elif item.text() == 'API Key':
             ApiDialog().exec()
+        else:
+            AboutDialog().exec()
 
 
 class Dialog(QDialog):
@@ -296,6 +298,22 @@ class Dialog(QDialog):
         pywinstyles.change_header_color(self, color="#202123")
         pywinstyles.change_border_color(self, color="#515473")
         return super().exec()
+
+
+class AboutDialog(Dialog):
+    def __init__(self):
+        super().__init__()
+        label = QLabel("<p>If you liked the App, "
+                       "<a href=\"https://github.com/qader1/GPT-GUI\">I'd appreciate a star on the Repo.</a> "
+                       "Enjoy!</p>"
+                       "\nby Qdr")
+        label.setOpenExternalLinks(True)
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        button = QPushButton("Ok")
+        button.clicked.connect(self.close)
+        self.container.addWidget(label, 1, 1, 1, 5)
+        self.container.addWidget(button, 2, 3, 1, 1)
+
 
 
 class ErrorDialog(Dialog):
