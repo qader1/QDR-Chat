@@ -303,6 +303,7 @@ class Dialog(QDialog):
 class AboutDialog(Dialog):
     def __init__(self):
         super().__init__()
+        self.setWindowTitle("by QDR")
         label = QLabel("<p>If you liked the App, "
                        "<a href=\"https://github.com/qader1/GPT-GUI\">I'd appreciate a star on the Repo.</a> "
                        "Enjoy!</p>"
@@ -313,18 +314,20 @@ class AboutDialog(Dialog):
         button.clicked.connect(self.close)
         self.container.addWidget(label, 1, 1, 1, 5)
         self.container.addWidget(button, 2, 3, 1, 1)
-
+        self.setFixedSize(self.sizeHint())
 
 
 class ErrorDialog(Dialog):
     def __init__(self):
         super().__init__()
-        self.label = QLabel("Incorrect API key.\n"
-                            "Set the key in the options menu in the top right corner.")
-        self.button = QPushButton("Acknowledge")
+        self.setWindowTitle("Incorrect API key")
+        self.label = QLabel("<b>Either no or incorrect API key provided</b></br>"
+                            "<p>Set the key in the options menu in the top right corner.</p>")
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.button = QPushButton("Ok")
         self.button.clicked.connect(self.close)
-        self.container.addWidget(self.label, 1, 1, 2, 3)
-        self.container.addWidget(self.button, 3, 2, 1, 1)
+        self.container.addWidget(self.label, 1, 1, 3, 3)
+        self.container.addWidget(self.button, 4, 2, 1, 1)
         self.setFixedSize(self.sizeHint())
 
 
@@ -332,7 +335,8 @@ class ApiDialog(Dialog):
     def __init__(self):
         super().__init__()
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
-        self.label = QLabel("Enter API key")
+        self.setWindowTitle("API Key")
+        self.label = QLabel("<b>Enter API key</b>")
         self.field = QLineEdit()
         with open("key.json") as f:
             api_key = json.load(f)['api_key']

@@ -99,7 +99,7 @@ class MainWindow(QMainWindow):
             new_title = title
         else:
             new_title = title.content.strip('"')
-        session.title = title.content.strip(new_title)
+            session.title = title.content.strip(new_title)
         item.setText(new_title)
         with open('history/history.csv', 'r') as f:
             reader = csv.reader(f)
