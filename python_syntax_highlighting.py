@@ -1,4 +1,5 @@
 from PyQt6 import QtCore, QtGui
+from PyQt6.QtGui import QFont
 from PyQt6.QtGui import QColorConstants as Cc
 import keyword
 import re
@@ -22,8 +23,11 @@ braces = [
 
 
 class PythonHighlighter(QtGui.QSyntaxHighlighter):
-    def __init__(self, doc):
+    def __init__(self, doc, text_size):
         super().__init__(doc)
+
+        self.text_size = text_size
+        self.font = "Consolas"
 
         self.styles = {
             'keyword': self.syntax_frmt(Cc.Svg.orange),
@@ -38,7 +42,8 @@ class PythonHighlighter(QtGui.QSyntaxHighlighter):
 
     def highlightBlock(self, text: str):
         font_frmt = QtGui.QTextCharFormat()
-        font_frmt.setFontFamily("Fixedsys")
+        font_frmt.setFontFamily(self.font)
+        font_frmt.setFontPointSize(self.text_size)
         self.setFormat(0, len(text), font_frmt)
         for desc, style in zip((operators, BUILTINS, KEYWORDS, braces),
                                ('operator', 'builtins', 'keyword', 'brace')):
@@ -49,11 +54,12 @@ class PythonHighlighter(QtGui.QSyntaxHighlighter):
                     next_ = match.next()
                     self.setFormat(next_.capturedStart(), next_.capturedLength(), self.styles[style])
 
-        digit = QtCore.QRegularExpression(rf'\d')
+        digit = QtCore.QRegularExpression(rf'\W(\d+)\W')
         match = digit.globalMatch(text)
         while match.hasNext():
             next_ = match.next()
-            self.setFormat(next_.capturedStart(), next_.capturedLength(), self.styles['numbers'])
+
+            self.setFormat(next_.capturedStart(1), next_.capturedLength(1), self.styles['numbers'])
 
         comment = QtCore.QRegularExpression(rf'#.*')
         match = comment.globalMatch(text)
@@ -93,10 +99,9 @@ class PythonHighlighter(QtGui.QSyntaxHighlighter):
                            self.styles['string'])
             return
 
-    @staticmethod
-    def syntax_frmt(color, style=None):
+    def syntax_frmt(self, color, style=None):
         frmt = QtGui.QTextCharFormat()
-        frmt.setFontFamily('Fixedsys')
+        frmt.setFontFamily(self.font)
         frmt.setForeground(color)
         if 'bold' == style:
             frmt.setFontWeight(700)
@@ -105,5 +110,5 @@ class PythonHighlighter(QtGui.QSyntaxHighlighter):
         else:
             frmt.setFontItalic(False)
             frmt.setFontWeight(400)
-
+        frmt.setFontPointSize(self.text_size)
         return frmt

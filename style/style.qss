@@ -48,7 +48,7 @@ QWidget.SystemMessageWidget {
     border: 0;
 }
 
-QWidget.HistoryWidget {
+QWidget.LeftWidget {
     background-color: rgb(32, 33, 35);
     border: 0;
 }
@@ -192,6 +192,7 @@ QPushButton#system_message_confirm, QPushButton#system_message_cancel {
 
 QPushButton#send_btn {
     background-color: rgb(52, 53, 65);
+    margin-bottom: 5px;
     border: 0;
 }
 

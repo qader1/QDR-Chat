@@ -12,6 +12,8 @@ class WorkerSignals(QObject):
 class OpenAIChat(QRunnable):
     def __init__(self, api_key, model, session, query_title=None):
         super().__init__()
+        if api_key == '':
+            api_key = 'none'
         self.chat = ChatOpenAI(model_name=model, openai_api_key=api_key)
         self.session = session
         self.query_title = query_title
@@ -40,3 +42,5 @@ class OpenAIChat(QRunnable):
             self.signals.result.emit(self.chat.predict_messages(messages))
         except error.AuthenticationError:
             self.signals.result.emit("Incorrect API key")
+        except error as e:
+            self.signals.result.emit(e)

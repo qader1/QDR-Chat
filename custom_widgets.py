@@ -14,7 +14,8 @@ from PyQt6.QtWidgets import (QApplication,
                              QLineEdit,
                              QLabel,
                              QGridLayout,
-                             QDialog)
+                             QDialog,
+                             QSpinBox)
 
 from PyQt6.QtSvgWidgets import QSvgWidget
 from PyQt6.QtCore import Qt, QTimer, pyqtSlot, pyqtSignal, QObject, QRect
@@ -27,7 +28,7 @@ import os
 
 
 class ChatWidget(QWidget):
-    def __init__(self):
+    def __init__(self, message_size, code_size):
         super().__init__()
         self.chat_container = QVBoxLayout()
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -44,7 +45,7 @@ class ChatWidget(QWidget):
         self.robot.setHidden(True)
 
         self.system_message_widget = SystemMessageWidget()
-        self.message_display_widget = MessageDisplayWidget()
+        self.message_display_widget = MessageDisplayWidget(message_size, code_size)
         self.input_widget = InputWidget()
 
         self.scroll = ScrollableMessageDisplay(self.message_display_widget)
@@ -91,9 +92,14 @@ class ChatWidget(QWidget):
             self.input_widget.text_edit.setPlaceholderText("Please wait.")
             self.input_widget.loading_indicator.start()
 
+    def set_font_size(self, message_size, code_size):
+        self.message_display_widget.message_size = message_size
+        self.message_display_widget.code_size = code_size
+
 
 class Signal(QObject):
     SystemMessageChanged = pyqtSignal(str)
+    FontSizesChanged = pyqtSignal(int, int)
 
 
 class SystemMessageWidget(QWidget):
@@ -217,8 +223,8 @@ class ColorableButtonIcon(QPushButton):
         return super().mouseReleaseEvent(e)
 
 
-class HistoryWidget(QWidget):
-    def __init__(self):
+class LeftWidget(QWidget):
+    def __init__(self, message_size, code_size):
         super().__init__()
         self.history_container = QGridLayout()
         self.history_container.setContentsMargins(0, 0, 0, 0)
@@ -230,17 +236,24 @@ class HistoryWidget(QWidget):
         self.new_chat_btn = QPushButton('New chat')
         self.new_chat_btn.setObjectName("new_chat_btn")
 
+        self.burger = QPushButton(icon=QIcon("icons/burger.svg"))
+        self.burger.setObjectName("burger")
+
+        self.menu = QMenu(self.burger)
+        self.menu.setObjectName("burger_menu")
+
+        self.burger.setMenu(self.menu)
+
+        self.code_size_spinbox = QSpinBox()
+        self.message_size_spinbox = QSpinBox()
+
         menu_options = [
             "API Key",
+            "Font size",
             "About",
             "Close"
         ]
 
-        self.burger = QPushButton(icon=QIcon("icons/burger.svg"))
-        self.burger.setObjectName("burger")
-        self.menu = QMenu(self.burger)
-        self.menu.setObjectName("burger_menu")
-        self.burger.setMenu(self.menu)
         self.create_menu(menu_options, self.menu)
         self.menu.setWindowFlags(Qt.WindowType.Popup |
                                  Qt.WindowType.FramelessWindowHint |
@@ -248,6 +261,9 @@ class HistoryWidget(QWidget):
         self.menu.triggered.connect(self.triggered)
 
         self.menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+        self.message_size, self.code_size = message_size, code_size
+        self.size_dialog = SizeDialog()
 
         self.history_container.addWidget(self.burger, 1, 1, 1, 1)
         self.history_container.addWidget(self.new_chat_btn, 1, 2, 1, 3)
@@ -274,15 +290,22 @@ class HistoryWidget(QWidget):
                 self.create_menu(i, menu)
         else:
             action = menu.addAction(data)
-            action.setIconVisibleInMenu(False)
+            if isinstance(data, str):
+                action.setIconVisibleInMenu(False)
 
     def triggered(self, item):
         if item.text() == 'Close':
             self.window().close()
         elif item.text() == 'API Key':
             ApiDialog().exec()
+        elif item.text() == 'Font size':
+            self.size_dialog.get_currents_exec(self.message_size, self.code_size)
         else:
             AboutDialog().exec()
+
+    def set_current_font_size(self, message_size, code_size):
+        self.message_size = message_size
+        self.code_size = code_size
 
 
 class Dialog(QDialog):
@@ -300,6 +323,52 @@ class Dialog(QDialog):
         return super().exec()
 
 
+class SizeDialog(Dialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("set font sizes")
+        label_code = QLabel("Code font size")
+        label_message = QLabel("Message font size")
+
+        self.original_message_size, self.original_code_size = None, None
+
+        self.code_spin = QSpinBox()
+        self.message_spin = QSpinBox()
+
+        self.cancel_btn = QPushButton("Cancel")
+        self.confirm_btn = QPushButton("Confirm")
+
+        self.container.addWidget(label_message, 1, 1, 1, 3)
+        self.container.addWidget(self.message_spin, 1, 4, 1, 2)
+        self.container.addWidget(label_code, 2, 1, 1, 3)
+        self.container.addWidget(self.code_spin, 2, 4, 1, 2)
+        self.container.addWidget(self.cancel_btn, 3, 2, 1, 1)
+        self.container.addWidget(self.confirm_btn, 3, 4, 1, 1)
+
+        self.cancel_btn.clicked.connect(self.cancel)
+        self.confirm_btn.clicked.connect(self.confirm)
+        
+        self.signal = Signal()
+
+    def cancel(self):
+        self.close()
+        
+    def confirm(self):
+        message_size, code_size = self.message_spin.value(), self.code_spin.value()
+        if message_size == self.original_message_size and code_size == self.original_code_size:
+            self.cancel()
+            return
+        self.signal.FontSizesChanged.emit(message_size, code_size)
+        self.close()
+
+    def get_currents_exec(self, message_size, code_size):
+        self.original_message_size = message_size
+        self.original_code_size = code_size
+        self.message_spin.setValue(message_size)
+        self.code_spin.setValue(code_size)
+        return super().exec()
+        
+        
 class AboutDialog(Dialog):
     def __init__(self):
         super().__init__()
@@ -320,15 +389,25 @@ class AboutDialog(Dialog):
 class ErrorDialog(Dialog):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Incorrect API key")
-        self.label = QLabel("<b>Either no or incorrect API key provided</b></br>"
-                            "<p>Set the key in the options menu in the top right corner.</p>")
+        self.setWindowTitle("API Error")
+        self.label = QLabel()
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.button = QPushButton("Ok")
         self.button.clicked.connect(self.close)
         self.container.addWidget(self.label, 1, 1, 3, 3)
         self.container.addWidget(self.button, 4, 2, 1, 1)
         self.setFixedSize(self.sizeHint())
+
+    def message(self, message):
+        if message == "Incorrect API key":
+            self.label.setText(
+                "<b>Either no or incorrect API key provided</b></br>"
+                "<p>Set the key in the options menu in the top right corner.</p>"
+            )
+        else:
+            self.label.setText("<b>Unspecified API Error</b>"
+                               f"<p>{message}</p>")
+        return self.exec()
 
 
 class ApiDialog(Dialog):
@@ -377,8 +456,8 @@ class InputWidget(QWidget):
                                                None)
 
         self.send_button.setObjectName("send_btn")
-        input_widget_box.addWidget(self.text_edit)
-        input_widget_box.addWidget(self.send_button)
+        input_widget_box.addWidget(self.text_edit, 50)
+        input_widget_box.addWidget(self.send_button, 1, Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
 
         self.loading_indicator = QTimer()
         self.loading_indicator.setInterval(200)
@@ -435,7 +514,7 @@ class ScrollableMessageDisplay(QScrollArea):
 
 
 class MessageDisplayWidget(QWidget):
-    def __init__(self):
+    def __init__(self, message_size, code_size):
         super().__init__()
         self.container = QVBoxLayout()
         self.container.setSpacing(0)
@@ -443,16 +522,22 @@ class MessageDisplayWidget(QWidget):
         self.container.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.container)
 
+        self.message_size = message_size
+        self.code_size = code_size
+
     def add_message(self, message, role):
         if role == 'assistant':
             pattern = re.compile(r"(^```python.*?```$)", flags=re.DOTALL | re.MULTILINE)
             for match in pattern.split(message):
+                match = match.strip()
+                if not match:
+                    continue
                 if match.startswith("```python") and match.endswith("```"):
-                    self.container.addWidget(Code(match[10:-3]))
+                    self.container.addWidget(Code(match[10:-3], self.code_size))
                 else:
-                    self.container.addWidget(Message(match.strip(), role))
+                    self.container.addWidget(Message(match.strip(), role, self.message_size))
         else:
-            self.container.addWidget(Message(message, role))
+            self.container.addWidget(Message(message, role, self.message_size))
         self.container.setAlignment(Qt.AlignmentFlag.AlignBottom)
 
 
@@ -469,6 +554,9 @@ class ResizableQText(QTextEdit):
     def resizeEvent(self, event):
         self.auto_resize()
 
+    def change_font_size(self, size):
+        self.setFontPointSize(size)
+
 
 class InputText(ResizableQText):
     def __init__(self):
@@ -477,6 +565,7 @@ class InputText(ResizableQText):
         self.textChanged.connect(self.auto_resize)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setObjectName("input_text")
+        self.setAcceptRichText(False)
 
     def keyPressEvent(self, e):
         key = e.key()
@@ -489,24 +578,32 @@ class InputText(ResizableQText):
 
         return super().keyPressEvent(e)
 
+    def auto_resize(self):
+        self.document().setTextWidth(self.viewport().width())
+        margins = self.contentsMargins()
+        height = int(self.document().size().height() + margins.top() + margins.bottom())
+        if height > self.window().height()//3:
+            return
+        self.setFixedHeight(height)
+
 
 class Code(ResizableQText):
-    def __init__(self, code):
+    def __init__(self, code, size):
         super().__init__()
         self.setObjectName("code")
         with open("style/style.qss") as f:
             self.setStyleSheet(f.read())
         self.setTextColor(QColor('lightgrey'))
-        self.setText(code)
         self.setReadOnly(True)
-        self.highlighter = PythonHighlighter(self.document())
+        self.highlighter = PythonHighlighter(self.document(), size)
+        self.setText(code)
 
 
 class Message(ResizableQText):
-    def __init__(self, text, role):
+    def __init__(self, text, role, size):
         super().__init__()
         self.role = role
         self.setReadOnly(True)
         self.setObjectName(role)
-        self.setFontPointSize(10)
+        self.setFontPointSize(size)
         self.setText(text)

@@ -1,5 +1,9 @@
+import sys
+import logging
+import traceback
+
 from PyQt6.QtWidgets import QMainWindow
-from PyQt6.QtCore import QSize, QThreadPool
+from PyQt6.QtCore import QSize, QThreadPool, qFatal
 from api import OpenAIChat
 from custom_widgets import *
 import random
@@ -12,6 +16,7 @@ import json
 import pathlib
 
 
+logging.basicConfig(level=logging.ERROR, filename="log.txt", filemode="a")
 app = QApplication([])
 
 if "key.json" not in os.listdir():
@@ -34,17 +39,22 @@ class MainWindow(QMainWindow):
         self.main_widget.setObjectName("main_widget")
         self.main_widget.setLayout(self.main_container)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-
         with open("style/style.qss") as f:
             self.setStyleSheet(f.read())
 
-        self.history_widget = HistoryWidget()
-        self.chat_widget = ChatWidget()
+        with open("style/config.json") as f:
+            config = json.load(f)
+        message_size = config["message_font_size"]
+        code_size = config["code_font_size"]
+
+        self.history_widget = LeftWidget(message_size, code_size)
+        self.chat_widget = ChatWidget(message_size, code_size)
         self.chat_widget.about(True)
 
         self.get_history()
         self.history_widget.new_chat_btn.clicked.connect(self.new_session)
         self.history_widget.history_list.itemPressed.connect(self.load_session)
+        self.history_widget.size_dialog.signal.FontSizesChanged.connect(self.change_text_size)
 
         self.main_container.addWidget(self.history_widget, 1)
         self.main_container.addWidget(self.chat_widget, 5)
@@ -136,7 +146,7 @@ class MainWindow(QMainWindow):
 
     def receive(self, result, session):
         if isinstance(result, str):
-            ErrorDialog().exec()
+            ErrorDialog().message(result)
         else:
             session.append_message(result.content, 'assistant')
             if session.id_ == self.current_session.id_:
@@ -183,6 +193,19 @@ class MainWindow(QMainWindow):
         else:
             self.chat_widget.about(False)
 
+    def change_text_size(self, message_size, code_size):
+        self.chat_widget.set_font_size(message_size, code_size)
+        self.history_widget.set_current_font_size(message_size, code_size)
+        with open("style/config.json", "w") as f:
+            sizes = {"message_font_size": message_size,
+                     "code_font_size": code_size}
+            json.dump(sizes, f)
+        if self.history_widget.history_list.selectedItems():
+            self.load_session(None)
+
+    def closeEvent(self, event):
+        sys.exit()
+
 
 class Session:
     def __init__(self, title):
@@ -208,6 +231,13 @@ class Session:
             pickle.dump(self, cls)
 
 
+def except_hook(type_, value, traceback_):
+    traceback.print_exception(type_, value, traceback_)
+    logging.exception("\n".join(traceback.format_exception(type_, value, traceback_)))
+    qFatal('')
+
+
+sys.excepthook = except_hook
 window = MainWindow()
 window.show()
 app.exec()
