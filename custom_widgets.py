@@ -396,7 +396,6 @@ class ErrorDialog(Dialog):
         self.button.clicked.connect(self.close)
         self.container.addWidget(self.label, 1, 1, 3, 3)
         self.container.addWidget(self.button, 4, 2, 1, 1)
-        self.setFixedSize(self.sizeHint())
 
     def message(self, message):
         if message == "Incorrect API key":
@@ -407,6 +406,7 @@ class ErrorDialog(Dialog):
         else:
             self.label.setText("<b>Unspecified API Error</b>"
                                f"<p>{message}</p>")
+        self.setFixedSize(self.sizeHint())
         return self.exec()
 
 
