@@ -106,10 +106,10 @@ class MainWindow(QMainWindow):
     @staticmethod
     def change_title(title, session, item):
         if isinstance(title, str):
-            new_title = title
+            new_title = "API Error"
         else:
             new_title = title.content.strip('"')
-            session.title = title.content.strip(new_title)
+        session.title = new_title
         item.setText(new_title)
         with open('history/history.csv', 'r') as f:
             reader = csv.reader(f)
@@ -232,8 +232,10 @@ class Session:
 
 
 def except_hook(type_, value, traceback_):
-    traceback.print_exception(type_, value, traceback_)
-    logging.exception("\n".join(traceback.format_exception(type_, value, traceback_)))
+    exception = traceback.TracebackException(type_, value, traceback_)
+    for frame_summary in exception.stack:
+        frame_summary.filename = os.path.relpath(frame_summary.filename)
+    logging.exception("".join(exception.format()))
     qFatal('')
 
 

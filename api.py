@@ -42,5 +42,5 @@ class OpenAIChat(QRunnable):
             self.signals.result.emit(self.chat.predict_messages(messages))
         except error.AuthenticationError:
             self.signals.result.emit("Incorrect API key")
-        except error as e:
-            self.signals.result.emit(e)
+        except Exception as e:
+            self.signals.result.emit(str(e))
