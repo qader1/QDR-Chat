@@ -46,9 +46,10 @@ class MainWindow(QMainWindow):
             config = json.load(f)
         message_size = config["message_font_size"]
         code_size = config["code_font_size"]
+        input_size = config["input_font_size"]
 
-        self.history_widget = LeftWidget(message_size, code_size)
-        self.chat_widget = ChatWidget(message_size, code_size)
+        self.history_widget = LeftWidget(message_size, code_size, input_size)
+        self.chat_widget = ChatWidget(message_size, code_size, input_size)
         self.chat_widget.about(True)
 
         self.get_history()
@@ -193,12 +194,13 @@ class MainWindow(QMainWindow):
         else:
             self.chat_widget.about(False)
 
-    def change_text_size(self, message_size, code_size):
-        self.chat_widget.set_font_size(message_size, code_size)
-        self.history_widget.set_current_font_size(message_size, code_size)
+    def change_text_size(self, message_size, code_size, input_size):
+        self.chat_widget.set_font_size(message_size, code_size, input_size)
+        self.history_widget.set_current_font_size(message_size, code_size, input_size)
         with open("style/config.json", "w") as f:
             sizes = {"message_font_size": message_size,
-                     "code_font_size": code_size}
+                     "code_font_size": code_size,
+                     "input_font_size": input_size}
             json.dump(sizes, f)
         if self.history_widget.history_list.selectedItems():
             self.load_session(None)

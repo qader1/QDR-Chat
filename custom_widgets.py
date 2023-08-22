@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import (QApplication,
                              QSpinBox)
 
 from PyQt6.QtSvgWidgets import QSvgWidget
-from PyQt6.QtCore import Qt, QTimer, pyqtSlot, pyqtSignal, QObject, QRect
+from PyQt6.QtCore import Qt, QTimer, pyqtSlot, pyqtSignal, QObject, QRect, QPropertyAnimation
 from PyQt6.QtGui import QColor, QIcon, QFont, QPixmap, QPainter
 from python_syntax_highlighting import PythonHighlighter
 import pywinstyles
@@ -28,7 +28,7 @@ import os
 
 
 class ChatWidget(QWidget):
-    def __init__(self, message_size, code_size):
+    def __init__(self, message_size, code_size, input_size):
         super().__init__()
         self.chat_container = QVBoxLayout()
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -46,7 +46,7 @@ class ChatWidget(QWidget):
 
         self.system_message_widget = SystemMessageWidget()
         self.message_display_widget = MessageDisplayWidget(message_size, code_size)
-        self.input_widget = InputWidget()
+        self.input_widget = InputWidget(input_size)
 
         self.scroll = ScrollableMessageDisplay(self.message_display_widget)
 
@@ -92,14 +92,15 @@ class ChatWidget(QWidget):
             self.input_widget.text_edit.setPlaceholderText("Please wait.")
             self.input_widget.loading_indicator.start()
 
-    def set_font_size(self, message_size, code_size):
+    def set_font_size(self, message_size, code_size, input_size):
         self.message_display_widget.message_size = message_size
         self.message_display_widget.code_size = code_size
+        self.input_widget.change_input_size(input_size)
 
 
 class Signal(QObject):
     SystemMessageChanged = pyqtSignal(str)
-    FontSizesChanged = pyqtSignal(int, int)
+    FontSizesChanged = pyqtSignal(int, int, int)
 
 
 class SystemMessageWidget(QWidget):
@@ -224,7 +225,7 @@ class ColorableButtonIcon(QPushButton):
 
 
 class LeftWidget(QWidget):
-    def __init__(self, message_size, code_size):
+    def __init__(self, message_size, code_size, input_size):
         super().__init__()
         self.history_container = QGridLayout()
         self.history_container.setContentsMargins(0, 0, 0, 0)
@@ -244,9 +245,6 @@ class LeftWidget(QWidget):
 
         self.burger.setMenu(self.menu)
 
-        self.code_size_spinbox = QSpinBox()
-        self.message_size_spinbox = QSpinBox()
-
         menu_options = [
             "API Key",
             "Font size",
@@ -262,7 +260,7 @@ class LeftWidget(QWidget):
 
         self.menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
-        self.message_size, self.code_size = message_size, code_size
+        self.message_size, self.code_size, self.input_size = message_size, code_size, input_size
         self.size_dialog = SizeDialog()
 
         self.history_container.addWidget(self.burger, 1, 1, 1, 1)
@@ -299,13 +297,14 @@ class LeftWidget(QWidget):
         elif item.text() == 'API Key':
             ApiDialog().exec()
         elif item.text() == 'Font size':
-            self.size_dialog.get_currents_exec(self.message_size, self.code_size)
+            self.size_dialog.get_currents_exec(self.message_size, self.code_size, self.input_size)
         else:
             AboutDialog().exec()
 
-    def set_current_font_size(self, message_size, code_size):
+    def set_current_font_size(self, message_size, code_size, input_size):
         self.message_size = message_size
         self.code_size = code_size
+        self.input_size = input_size
 
 
 class Dialog(QDialog):
@@ -329,11 +328,15 @@ class SizeDialog(Dialog):
         self.setWindowTitle("set font sizes")
         label_code = QLabel("Code font size")
         label_message = QLabel("Message font size")
+        label_input = QLabel("Input font size")
 
-        self.original_message_size, self.original_code_size = None, None
+        (self.original_message_size,
+         self.original_code_size,
+         self.original_input_size) = None, None, None
 
         self.code_spin = QSpinBox()
         self.message_spin = QSpinBox()
+        self.input_spin = QSpinBox()
 
         self.cancel_btn = QPushButton("Cancel")
         self.confirm_btn = QPushButton("Confirm")
@@ -342,30 +345,42 @@ class SizeDialog(Dialog):
         self.container.addWidget(self.message_spin, 1, 4, 1, 2)
         self.container.addWidget(label_code, 2, 1, 1, 3)
         self.container.addWidget(self.code_spin, 2, 4, 1, 2)
-        self.container.addWidget(self.cancel_btn, 3, 2, 1, 1)
-        self.container.addWidget(self.confirm_btn, 3, 4, 1, 1)
+        self.container.addWidget(label_input, 3, 1, 1, 3)
+        self.container.addWidget(self.input_spin, 3, 4, 1, 2)
+
+        self.container.addWidget(self.cancel_btn, 4, 2, 1, 1)
+        self.container.addWidget(self.confirm_btn, 4, 4, 1, 1)
+
+        self.setFixedSize(self.sizeHint())
 
         self.cancel_btn.clicked.connect(self.cancel)
         self.confirm_btn.clicked.connect(self.confirm)
-        
+
         self.signal = Signal()
 
     def cancel(self):
         self.close()
         
     def confirm(self):
-        message_size, code_size = self.message_spin.value(), self.code_spin.value()
-        if message_size == self.original_message_size and code_size == self.original_code_size:
+        message = self.message_spin.value()
+        code = self.code_spin.value()
+        input_ = self.input_spin.value()
+
+        if (message == self.original_message_size
+                and code == self.original_code_size
+                and input_ == self.original_input_size):
             self.cancel()
             return
-        self.signal.FontSizesChanged.emit(message_size, code_size)
+        self.signal.FontSizesChanged.emit(message, code, input_)
         self.close()
 
-    def get_currents_exec(self, message_size, code_size):
+    def get_currents_exec(self, message_size, code_size, input_size):
         self.original_message_size = message_size
         self.original_code_size = code_size
+        self.original_input_size = input_size
         self.message_spin.setValue(message_size)
         self.code_spin.setValue(code_size)
+        self.input_spin.setValue(input_size)
         return super().exec()
         
         
@@ -443,11 +458,11 @@ class ApiDialog(Dialog):
 
 
 class InputWidget(QWidget):
-    def __init__(self):
+    def __init__(self, input_size):
         super().__init__()
         input_widget_box = QHBoxLayout()
         self.setLayout(input_widget_box)
-        self.text_edit = InputText()
+        self.text_edit = InputText(input_size)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
         self.send_button = ColorableButtonIcon('icons/send.svg',
@@ -457,7 +472,9 @@ class InputWidget(QWidget):
 
         self.send_button.setObjectName("send_btn")
         input_widget_box.addWidget(self.text_edit, 50)
-        input_widget_box.addWidget(self.send_button, 1, Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
+        input_widget_box.addWidget(self.send_button,
+                                   1,
+                                   Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignRight)
 
         self.loading_indicator = QTimer()
         self.loading_indicator.setInterval(200)
@@ -470,6 +487,12 @@ class InputWidget(QWidget):
         self.text_edit.setPlaceholderText(
              place_holder + '.'
         )
+
+    def change_input_size(self, size):
+        font = QFont()
+        font.setPointSize(size)
+        self.text_edit.setFont(font)
+        self.text_edit.auto_resize()
 
 
 class CustomQListWidget(QListWidget):
@@ -554,13 +577,13 @@ class ResizableQText(QTextEdit):
     def resizeEvent(self, event):
         self.auto_resize()
 
-    def change_font_size(self, size):
-        self.setFontPointSize(size)
-
 
 class InputText(ResizableQText):
-    def __init__(self):
+    def __init__(self, size):
         super().__init__()
+        font = QFont()
+        font.setPointSize(size)
+        self.setFont(font)
         self.setPlaceholderText('Send a message')
         self.textChanged.connect(self.auto_resize)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)

@@ -15,6 +15,7 @@ class OpenAIChat(QRunnable):
         if api_key == '':
             api_key = 'none'
         self.chat = ChatOpenAI(model_name=model, openai_api_key=api_key)
+        self.max_tokens = 8192
         self.session = session
         self.query_title = query_title
         self.signals = WorkerSignals()
@@ -32,12 +33,19 @@ class OpenAIChat(QRunnable):
             )
             messages = [SystemMessage(content=system_message), HumanMessage(content=self.query_title)]
         else:
-            messages = [SystemMessage(content=self.session.system_message)]
-            for x in self.session.messages:
-                if x['role'] == 'user':
-                    messages.append(HumanMessage(content=x['message']))
+            messages = []
+            num_tokens = 0
+            for x in reversed(self.session.messages):
+                if num_tokens + self.chat.get_num_tokens(x['message']) > self.max_tokens:
+                    break
                 else:
-                    messages.append(AIMessage(content=x['message']))
+                    num_tokens += self.chat.get_num_tokens(x['message'])
+                    if x['role'] == 'user':
+                        messages.append(HumanMessage(content=x['message']))
+                    else:
+                        messages.append(AIMessage(content=x['message']))
+            messages.append(SystemMessage(content=self.session.system_message))
+            messages = list(reversed(messages))
         try:
             self.signals.result.emit(self.chat.predict_messages(messages))
         except error.AuthenticationError:

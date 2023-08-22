@@ -193,7 +193,8 @@ QPushButton#system_message_confirm, QPushButton#system_message_cancel {
 QPushButton#send_btn {
     background-color: rgb(52, 53, 65);
     margin-bottom: 5px;
-    border: 0;
+    margin-top: 5px;
+
 }
 
 QPushButton#edit {
