@@ -28,6 +28,7 @@ PyYAML==6.0.1
 requests==2.31.0
 SQLAlchemy==2.0.19
 tenacity==8.2.2
+tiktoken==0.4.0
 tqdm==4.65.0
 typing-inspect==0.9.0
 typing_extensions==4.7.1
