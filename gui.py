@@ -29,7 +29,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('QDR Chat')
-        self.resize(QSize(1440, 810))
+        size = app.primaryScreen().size()
+        self.resize(QSize(2*size.width()//3, 2*size.height()//3))
         self.setWindowIcon(QIcon('icons/main_window.svg'))
 
         self.main_container = QHBoxLayout()

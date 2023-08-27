@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import (QApplication,
                              QSpinBox)
 
 from PyQt6.QtSvgWidgets import QSvgWidget
-from PyQt6.QtCore import Qt, QTimer, pyqtSlot, pyqtSignal, QObject, QRect, QPropertyAnimation
+from PyQt6.QtCore import Qt, QTimer, pyqtSlot, pyqtSignal, QObject, QRect
 from PyQt6.QtGui import QColor, QIcon, QFont, QPixmap, QPainter
 from python_syntax_highlighting import PythonHighlighter
 import pywinstyles
@@ -58,7 +58,6 @@ class ChatWidget(QWidget):
     def display_messages(self, messages):
         for i in messages:
             self.message_display_widget.add_message(i['message'], i['role'])
-        QTimer.singleShot(5, self.scroll_to_bottom)
         self.input_widget.text_edit.setText('')
 
     def scroll_to_bottom(self):
@@ -613,6 +612,7 @@ class InputText(ResizableQText):
 class Code(ResizableQText):
     def __init__(self, code, size):
         super().__init__()
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setObjectName("code")
         with open("style/style.qss") as f:
             self.setStyleSheet(f.read())
@@ -621,12 +621,20 @@ class Code(ResizableQText):
         self.highlighter = PythonHighlighter(self.document(), size)
         self.setText(code)
 
+    def wheelEvent(self, event):
+        event.ignore()
+
 
 class Message(ResizableQText):
     def __init__(self, text, role, size):
         super().__init__()
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.role = role
         self.setReadOnly(True)
         self.setObjectName(role)
         self.setFontPointSize(size)
         self.setText(text)
+
+    def wheelEvent(self, event):
+        event.ignore()
+
