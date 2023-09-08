@@ -605,7 +605,7 @@ class InputText(ResizableQText):
         margins = self.contentsMargins()
         height = int(self.document().size().height() + margins.top() + margins.bottom())
         if height > self.window().height()//3:
-            return
+            height = self.window().height()//3
         self.setFixedHeight(height)
 
 
