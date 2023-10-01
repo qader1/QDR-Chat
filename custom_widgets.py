@@ -77,7 +77,7 @@ class ChatWidget(QWidget):
         self.robot.setHidden(not show)
         self.message_display_widget.setHidden(show)
         self.message_display_widget.container.setAlignment(Qt.AlignmentFlag.AlignBottom)
-        self.system_message_widget.setHidden(show)
+        #self.system_message_widget.setHidden(show)
 
     def toggle_loading_indicator(self):
         if self.input_widget.loading_indicator.isActive():
@@ -108,6 +108,7 @@ class SystemMessageWidget(QWidget):
         system_message_layout = QHBoxLayout()
         self.setLayout(system_message_layout)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setFixedHeight(45)
 
         label = QLabel("System Prompt")
         label.setObjectName("system_prompt")
@@ -268,6 +269,7 @@ class LeftWidget(QWidget):
 
     def add(self, title):
         new_item = QListWidgetItem(title)
+        new_item.setToolTip(title)
         new_item.setIcon(QIcon('icons/message.svg'))
         self.history_list.insertItem(0, new_item)
         self.history_list.setCurrentItem(new_item)

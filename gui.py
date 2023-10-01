@@ -81,7 +81,7 @@ class MainWindow(QMainWindow):
         if self.current_session is None:
             title = "New Chat"
             self.current_session = Session(title)
-            self.chat_widget.set_system_message(self.current_session.system_message)
+            self.current_session.system_message = self.chat_widget.system_message_widget.system_message.text()
             self.history_widget.add(title)
             self.show_about(False)
             self.get_title(message, self.current_session, self.history_widget.history_list.currentItem())
@@ -113,6 +113,7 @@ class MainWindow(QMainWindow):
             new_title = title.content.strip('"')
         session.title = new_title
         item.setText(new_title)
+        item.setToolTip(new_title)
         with open('history/history.csv', 'r') as f:
             reader = csv.reader(f)
             rows = list(reader)
@@ -125,14 +126,9 @@ class MainWindow(QMainWindow):
             writer.writerows(rows)
 
     def edit_system_message(self, text):
-        if self.current_session is None:
-            title = 'Dummy' + str(random.randint(1, 200))
-            self.current_session = Session(title)
+        if self.current_session is not None:
             self.current_session.system_message = text
-            self.history_widget.add(title)
             self.current_session.save()
-        else:
-            self.current_session.system_message = text
 
     def run_model(self, session):
         with open("key.json", 'r') as api_key:
