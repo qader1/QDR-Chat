@@ -315,7 +315,7 @@ class Dialog(QDialog):
         self.setLayout(self.container)
         self.container.setSpacing(25)
         self.container.setContentsMargins(20, 20, 20, 20)
-        self.setWindowIcon(QIcon("icons/main_window.svg"))
+        self.setWindowIcon(QIcon("icons/ai.ico"))
 
     def exec(self) -> int:
         pywinstyles.change_header_color(self, color="#202123")
