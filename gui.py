@@ -4,9 +4,8 @@ import traceback
 
 from PyQt6.QtWidgets import QMainWindow
 from PyQt6.QtCore import QSize, QThreadPool, qFatal
-from api import OpenAIChat
+from api import OpenAIChat, Memories
 from custom_widgets import *
-import random
 import os
 import uuid
 import datetime
@@ -93,7 +92,8 @@ class MainWindow(QMainWindow):
             message, 'user'
         )
         self.run_model(self.current_session)
-        QTimer.singleShot(5, self.chat_widget.scroll_to_bottom)
+        self.evaluate_memory(self.current_session)
+        QTimer.singleShot(10, self.chat_widget.scroll_to_bottom)
         self.chat_widget.input_widget.text_edit.setText('')
         self.current_session.save()
 
@@ -138,6 +138,26 @@ class MainWindow(QMainWindow):
         llm.signals.started.connect(self.set_disable)
         llm.signals.result.connect(lambda x: self.receive(x, session))
         self.pool.start(llm)
+
+    def evaluate_memory(self, session):
+
+        with open("key.json", 'r') as api_key:
+            file = json.load(api_key)
+            api_key, model = file['api_key'], file['model']
+        llm = Memories(api_key, model, session)
+        llm.signals.memory.connect(lambda x: self.update_memory(x))
+        self.pool.start(llm)
+
+    def update_memory(self, memory):
+        if memory.content != "None":
+            with open("history/memories.json", 'r') as f:
+                json_data = json.load(f)
+                json_data["memories"].append(
+                    {"date": datetime.datetime.now().strftime("%Y-%h-%d %H:%M:%S"),
+                     "memory": memory.content}
+                )
+            with open("history/memories.json", 'w') as f:
+                json.dump(json_data, f)
 
     def set_disable(self):
         self.chat_widget.toggle_loading_indicator()

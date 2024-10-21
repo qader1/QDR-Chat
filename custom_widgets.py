@@ -15,7 +15,11 @@ from PyQt6.QtWidgets import (QApplication,
                              QLabel,
                              QGridLayout,
                              QDialog,
-                             QSpinBox)
+                             QSpinBox,
+                             QTableWidget,
+                             QTableWidgetItem,
+                             QMessageBox,
+                             QStyle)
 
 from PyQt6.QtSvgWidgets import QSvgWidget
 from PyQt6.QtCore import Qt, QTimer, pyqtSlot, pyqtSignal, QObject, QRect
@@ -247,7 +251,8 @@ class LeftWidget(QWidget):
 
         menu_options = [
             "API Key",
-            "Font size",
+            "Manage Memories",
+            "Font Size",
             "About",
             "Close"
         ]
@@ -266,6 +271,7 @@ class LeftWidget(QWidget):
         self.history_container.addWidget(self.burger, 1, 1, 1, 1)
         self.history_container.addWidget(self.new_chat_btn, 1, 2, 1, 3)
         self.history_container.addWidget(self.history_list, 2, 1, 10, 4)
+        self.setMinimumWidth(250)
 
     def add(self, title):
         new_item = QListWidgetItem(title)
@@ -297,8 +303,10 @@ class LeftWidget(QWidget):
             self.window().close()
         elif item.text() == 'API Key':
             ApiDialog().exec()
-        elif item.text() == 'Font size':
+        elif item.text() == 'Font Size':
             self.size_dialog.get_currents_exec(self.message_size, self.code_size, self.input_size)
+        elif item.text() == "Manage Memories":
+            ManageMemories().exec()
         else:
             AboutDialog().exec()
 
@@ -306,6 +314,7 @@ class LeftWidget(QWidget):
         self.message_size = message_size
         self.code_size = code_size
         self.input_size = input_size
+
 
 
 class Dialog(QDialog):
@@ -383,8 +392,127 @@ class SizeDialog(Dialog):
         self.code_spin.setValue(code_size)
         self.input_spin.setValue(input_size)
         return super().exec()
-        
-        
+
+
+class ManageMemories(Dialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Manage Memories")
+        self.name_label = QLabel(text="User's Name")
+
+        data = load_json("history/memories.json")
+        user_name = data["user"]
+        ai_name = data["ai"]
+
+        self.name_entry = QLineEdit(user_name)
+        self.ai_label = QLabel("AI's Name")
+        self.ai_entry = QLineEdit(ai_name)
+        self.btn_memories = QPushButton("View/Edit Memories")
+        self.btn_memories.clicked.connect(self.open_memories)
+
+        self.btn_save = QPushButton("Save and Close")
+        self.btn_save.clicked.connect(self.save)
+
+        self.container.addWidget(self.name_label, 1, 1)
+        self.container.addWidget(self.name_entry, 1, 2)
+        self.container.addWidget(self.ai_label, 2, 1)
+        self.container.addWidget(self.ai_entry, 2, 2)
+        self.container.addWidget(self.btn_memories, 3, 1)
+        self.container.addWidget(self.btn_save, 3, 2)
+        self.setFixedSize(self.sizeHint())
+
+    def save(self):
+        json_data = load_json("history/memories.json")
+        json_data["user"] = self.name_entry.text()
+        json_data["ai"] = self.ai_entry.text()
+        save_json(json_data, "history/memories.json")
+        self.close()
+
+    @staticmethod
+    def open_memories():
+        EditableTableDialog("history/memories.json").exec()
+
+
+def load_json(file_path):
+    with open(file_path, 'r') as f:
+        return json.load(f)
+
+
+def save_json(data, file_path):
+    with open(file_path, 'w') as f:
+        json.dump(data, f, indent=4)
+
+
+class EditableTableDialog(QDialog):
+    def __init__(self, json_file):
+        super().__init__()
+
+        self.json_file = json_file
+        self.data = load_json(self.json_file)
+
+        self.setWindowTitle("Memory Table")
+        self.layout = QVBoxLayout(self)
+
+        self.table = QTableWidget(self)
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(["Date", "Memory", ""])
+
+        self.populate_table()
+
+        self.layout.addWidget(self.table)
+
+    def populate_table(self):
+        memories = self.data["memories"]
+        self.table.setRowCount(len(memories))
+
+        for row, memory in enumerate(memories):
+            date_item = QTableWidgetItem(memory["date"])
+            memory_item = QTableWidgetItem(memory["memory"])
+
+            date_item.setFlags(date_item.flags() | Qt.ItemFlag.ItemIsEditable)
+            memory_item.setFlags(memory_item.flags() | Qt.ItemFlag.ItemIsEditable)
+
+            self.table.setItem(row, 0, date_item)
+            self.table.setItem(row, 1, memory_item)
+
+            delete_button = QPushButton("Delete")
+            delete_button.clicked.connect(lambda r: self.delete_row(memory["date"], delete_button))
+            button_widget = QWidget()
+            button_layout = QHBoxLayout()
+            button_layout.addWidget(delete_button)
+            button_layout.setContentsMargins(0, 0, 0, 0)
+            button_widget.setLayout(button_layout)
+            self.table.setCellWidget(row, 2, button_widget)
+        self.table.resizeColumnsToContents()
+
+        total_width = sum(self.table.columnWidth(i) for i in range(self.table.columnCount()))
+        total_width += self.table.verticalHeader().width()
+        total_width += self.style().pixelMetric(QStyle.PixelMetric.PM_ScrollBarExtent)
+        total_width += self.table.frameWidth() * 2
+        total_width += self.layout.contentsMargins().left() + self.layout.contentsMargins().right()
+
+        self.setContentsMargins(0, 0, 0, 0)
+
+        self.setFixedWidth(total_width)
+
+    def delete_row(self, row, btn):
+        reply = QMessageBox.question(self, 'Delete Memory',
+                                     'Are you sure you want to delete this Memory?',
+                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                     QMessageBox.StandardButton.No)
+
+        if reply == QMessageBox.StandardButton.Yes:
+            btn.setText("Deleted")
+            btn.setDisabled(True)
+            for i in range(len(self.data["memories"])):
+                if self.data["memories"][i]["date"] == row:
+                    del self.data["memories"][i]
+
+    def closeEvent(self, event):
+        save_json(self.data, self.json_file)
+        return super().closeEvent(event)
+
+
 class AboutDialog(Dialog):
     def __init__(self):
         super().__init__()
